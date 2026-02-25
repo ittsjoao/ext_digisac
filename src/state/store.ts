@@ -4,6 +4,7 @@ import type {
   DepartmentItem,
   UserFullItem,
   ContactItem,
+  GClickClient,
 } from "@/api/types";
 import type { DeptPermissions } from "@/app/permissions";
 import { defaultDeptPermissions } from "@/app/permissions";
@@ -20,6 +21,7 @@ interface TicketFormState {
   selectedContactName: string | null;
   selectedDepartmentId: string | null;
   selectedUserId: string | null;
+  selectedGclickClientId: number | null;
   comments: string;
 }
 
@@ -47,6 +49,11 @@ interface AppState {
   deptPermissions: DeptPermissions;
   setDeptPermissions: (p: DeptPermissions) => void;
 
+  gclickEnabled: boolean;
+  setGclickEnabled: (v: boolean) => void;
+  gclickClients: GClickClient[];
+  setGclickClients: (c: GClickClient[]) => void;
+
   modalOpen: boolean;
   setModalOpen: (open: boolean) => void;
   loading: boolean;
@@ -65,6 +72,7 @@ const initialForm: TicketFormState = {
   selectedContactName: null,
   selectedDepartmentId: null,
   selectedUserId: null,
+  selectedGclickClientId: null,
   comments: "",
 };
 
@@ -92,6 +100,11 @@ export const useAppStore = create<AppState>((set) => ({
 
   deptPermissions: defaultDeptPermissions,
   setDeptPermissions: (deptPermissions) => set({ deptPermissions }),
+
+  gclickEnabled: false,
+  setGclickEnabled: (gclickEnabled) => set({ gclickEnabled }),
+  gclickClients: [],
+  setGclickClients: (gclickClients) => set({ gclickClients }),
 
   modalOpen: false,
   setModalOpen: (modalOpen) => set({ modalOpen }),
