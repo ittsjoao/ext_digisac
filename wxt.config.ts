@@ -8,7 +8,7 @@ export default defineConfig({
     name: "DigiSac Ticket",
     description: "Extensão para abrir chamados no DigiSac",
     permissions: ["storage"],
-    host_permissions: ["https://auster.digisac.co/*"],
+    host_permissions: ["https://auster.digisac.co/*", "https://api.gclick.com.br/*"],
   },
   vite: () => ({
     plugins: [tailwindcss()],
