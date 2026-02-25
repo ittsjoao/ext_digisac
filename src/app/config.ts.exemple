@@ -1,0 +1,7 @@
+export const BASE_URL = "https://sua.url/api/v1";
+
+export const ADMIN_EMAILS: string[] = ["emails.admins@email.com.br"];
+
+export const CONTENT_MATCHES = ["*://sua.url/*"];
+
+export const STORAGE_KEY_TOKEN = "suaApiKey";
