@@ -10,7 +10,8 @@ import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
-import { ADMIN_EMAILS, defaultDeptPermissions } from "@/app/permissions";
+import { ADMIN_EMAILS } from "@/app/config";
+import { defaultDeptPermissions } from "@/app/permissions";
 import type { DeptPermission, DeptPermissions } from "@/app/permissions";
 import { useAppStore } from "@/state/store";
 import {

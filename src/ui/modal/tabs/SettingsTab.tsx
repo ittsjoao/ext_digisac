@@ -36,6 +36,7 @@ export function SettingsTab() {
           id="gclick-toggle"
           checked={gclickEnabled}
           onCheckedChange={handleGclickToggle}
+          className="data-[state=checked]:bg-green-500 data-[state=unchecked]:bg-red-400"
         />
       </div>
 

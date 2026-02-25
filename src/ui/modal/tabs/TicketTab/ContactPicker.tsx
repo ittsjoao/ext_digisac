@@ -14,6 +14,7 @@ function normalizePhone(phone: string): string {
 
 export function ContactPicker() {
   const [search, setSearch] = useState("");
+  const [focused, setFocused] = useState(false);
   const [checking, setChecking] = useState(false);
   const serviceId = useAppStore((s) => s.form.selectedServiceId);
   const contactsByService = useAppStore((s) => s.contactsByService);
@@ -26,7 +27,7 @@ export function ContactPicker() {
     (s) => s.form.selectedGclickClientId,
   );
 
-  const contacts = serviceId ? contactsByService[serviceId] ?? [] : [];
+  const contacts = serviceId ? (contactsByService[serviceId] ?? []) : [];
 
   const selectedCompany = useMemo(
     () => gclickClients.find((c) => c.id === selectedGclickClientId) ?? null,
@@ -60,15 +61,22 @@ export function ContactPicker() {
 
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return contacts.filter((c) => {
-      const displayName = c.internalName ?? c.name;
-      const number = c.data?.number ?? "";
-      return (
-        displayName.toLowerCase().includes(q) ||
-        number.toLowerCase().includes(q)
-      );
-    });
+    const base = q
+      ? contacts.filter((c) => {
+          const displayName = c.internalName ?? c.name;
+          const number = c.data?.number ?? "";
+          return (
+            displayName.toLowerCase().includes(q) ||
+            number.toLowerCase().includes(q)
+          );
+        })
+      : contacts;
+
+    return [...base]
+      .sort((a, b) =>
+        (a.internalName ?? a.name).localeCompare(b.internalName ?? b.name),
+      )
+      .slice(0, q ? undefined : 10);
   }, [contacts, search]);
 
   const handleSelect = async (contactId: string, displayName: string) => {
@@ -76,7 +84,8 @@ export function ContactPicker() {
     try {
       const hasOpen = await checkOpenTicket(contactId);
       if (hasOpen) {
-        toast.error("Este contato já possui um ticket aberto.");
+        toast.error("Este contato já possui um chamado em aberto.");
+        setSearch("");
         return;
       }
       setFormField("selectedContactId", contactId);
@@ -91,8 +100,7 @@ export function ContactPicker() {
 
   if (!serviceId) return null;
 
-  const showGclickMatch =
-    gclickEnabled && selectedCompany && matchedContacts;
+  const showGclickMatch = gclickEnabled && selectedCompany && matchedContacts;
 
   return (
     <div className="space-y-2">
@@ -159,6 +167,8 @@ export function ContactPicker() {
             placeholder="Digite para buscar contato..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
             disabled={checking}
           />
           {checking && (
@@ -166,7 +176,7 @@ export function ContactPicker() {
               Verificando tickets abertos...
             </p>
           )}
-          {search.trim().length > 0 && !checking && (
+          {!checking && focused && (
             <ScrollArea className="h-[200px] rounded-md border">
               {filtered.map((c) => {
                 const displayName = c.internalName ?? c.name;
@@ -189,11 +199,7 @@ export function ContactPicker() {
                     {c.tags.length > 0 && (
                       <div className="flex flex-wrap gap-1 mt-1">
                         {c.tags.map((tag, i) => (
-                          <Badge
-                            key={i}
-                            variant="outline"
-                            className="text-xs"
-                          >
+                          <Badge key={i} variant="outline" className="text-xs">
                             {tag.label}
                           </Badge>
                         ))}

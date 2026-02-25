@@ -10,6 +10,7 @@ import { toast } from "sonner";
 
 export function CompanyPicker() {
   const [search, setSearch] = useState("");
+  const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
   const gclickEnabled = useAppStore((s) => s.gclickEnabled);
   const serviceId = useAppStore((s) => s.form.selectedServiceId);
@@ -45,14 +46,24 @@ export function CompanyPicker() {
     }
   }
 
+  const availableClients = useMemo(
+    () => clients.filter((c) => c.telefones.length > 0),
+    [clients],
+  );
+
   const filtered = useMemo(() => {
     const q = search.trim().toLowerCase();
-    if (!q) return [];
-    return clients.filter(
-      (c) =>
-        c.nome.toLowerCase().includes(q) || c.inscricao.includes(q),
-    );
-  }, [clients, search]);
+    const base = q
+      ? availableClients.filter(
+          (c) =>
+            c.nome.toLowerCase().includes(q) || c.inscricao.includes(q),
+        )
+      : availableClients;
+
+    return [...base]
+      .sort((a, b) => a.nome.localeCompare(b.nome))
+      .slice(0, q ? undefined : 10);
+  }, [availableClients, search]);
 
   if (!gclickEnabled || !serviceId) return null;
 
@@ -91,6 +102,8 @@ export function CompanyPicker() {
             placeholder="Buscar empresa por nome ou CNPJ..."
             value={search}
             onChange={(e) => setSearch(e.target.value)}
+            onFocus={() => setFocused(true)}
+            onBlur={() => setTimeout(() => setFocused(false), 150)}
             disabled={loading}
           />
           {loading && (
@@ -98,7 +111,7 @@ export function CompanyPicker() {
               Carregando empresas...
             </p>
           )}
-          {search.trim().length > 0 && !loading && (
+          {!loading && focused && (
             <ScrollArea className="h-[200px] rounded-md border">
               {filtered.map((c) => (
                 <button
