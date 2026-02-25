@@ -6,6 +6,7 @@ import { listDepartments } from "@/api/departments";
 import { getUsersFull } from "@/api/users";
 import { toast } from "sonner";
 import { ServiceSelect } from "./ServiceSelect";
+import { CompanyPicker } from "./CompanyPicker";
 import { ContactPicker } from "./ContactPicker";
 import { DepartmentSelect } from "./DepartmentSelect";
 import { UserSelect } from "./UserSelect";
@@ -55,6 +56,7 @@ export function TicketTab() {
   return (
     <div className="space-y-4 py-4">
       <ServiceSelect />
+      <CompanyPicker />
       <ContactPicker />
       <DepartmentSelect />
       <UserSelect />
