@@ -3,10 +3,12 @@ import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Separator } from "@/components/ui/separator";
+import { Switch } from "@/components/ui/switch";
 import { STORAGE_KEY_TOKEN } from "@/app/config";
 import { BASE_URL } from "@/app/config";
 import { useAppStore } from "@/state/store";
 import { isAdmin } from "@/app/permissions";
+import { setGClickEnabled } from "@/storage/gclick";
 import { LoginBlock } from "./TicketTab/LoginBlock";
 import { toast } from "sonner";
 
@@ -15,10 +17,27 @@ export function SettingsTab() {
   const [saved, setSaved] = useState(false);
   const email = useAppStore((s) => s.auth.email);
   const admin = email ? isAdmin(email) : false;
+  const gclickEnabled = useAppStore((s) => s.gclickEnabled);
+  const setGclickEnabledStore = useAppStore((s) => s.setGclickEnabled);
+
+  async function handleGclickToggle(checked: boolean) {
+    setGclickEnabledStore(checked);
+    await setGClickEnabled(checked);
+  }
 
   return (
     <div className="space-y-4 py-4">
       <LoginBlock />
+
+      <Separator />
+      <div className="flex items-center justify-between">
+        <Label htmlFor="gclick-toggle">Integração G-Click</Label>
+        <Switch
+          id="gclick-toggle"
+          checked={gclickEnabled}
+          onCheckedChange={handleGclickToggle}
+        />
+      </div>
 
       {admin && (
         <>
