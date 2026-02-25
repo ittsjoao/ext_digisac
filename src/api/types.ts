@@ -52,6 +52,18 @@ export interface TransferPayload {
   comments?: string;
 }
 
+export interface GClickPhone {
+  nome: string;
+  numero: string;
+}
+
+export interface GClickClient {
+  id: number;
+  nome: string;
+  inscricao: string;
+  telefones: GClickPhone[];
+}
+
 export interface HistoryEntry {
   date: string;
   email: string;
