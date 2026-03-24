@@ -21,9 +21,9 @@ export function LoginBlock() {
           <p className="text-sm font-medium">{auth.name}</p>
           <p className="text-xs text-muted-foreground">{auth.email}</p>
         </div>
-        <Button variant="ghost" size="sm" onClick={() => clearAuthStore()}>
-          Sair
-        </Button>
+        {/*<Button variant="ghost" size="sm" onClick={() => clearAuthStore()}>
+            Sair
+            </Button>*/}
       </div>
     );
   }

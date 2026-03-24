@@ -1,4 +1,3 @@
-import { mountReactApp } from "@/ui/mount";
 import { useAppStore } from "@/state/store";
 
 export function injectButton(header: Element): void {
@@ -20,7 +19,6 @@ export function injectButton(header: Element): void {
   `;
 
   btn.addEventListener("click", () => {
-    mountReactApp();
     useAppStore.getState().setModalOpen(true);
   });
 

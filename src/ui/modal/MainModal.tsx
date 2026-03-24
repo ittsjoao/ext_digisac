@@ -1,3 +1,4 @@
+import { useState, useEffect } from "react";
 import { Dialog, DialogContent } from "@/components/ui/dialog";
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
@@ -13,12 +14,17 @@ export function MainModal() {
   const setOpen = useAppStore((s) => s.setModalOpen);
   const email = useAppStore((s) => s.auth.email);
   const showAdmin = email ? isAdmin(email) : false;
+  const [activeTab, setActiveTab] = useState("ticket");
+
+  useEffect(() => {
+    if (open) setActiveTab("ticket");
+  }, [open]);
 
   return (
     <>
       <Dialog open={open} onOpenChange={setOpen}>
         <DialogContent className="sm:max-w-2xl max-h-[85vh] overflow-y-auto">
-          <Tabs defaultValue="ticket" className="w-full">
+          <Tabs value={activeTab} onValueChange={setActiveTab} activationMode="manual" className="w-full">
             <TabsList className="w-full">
               <TabsTrigger value="ticket" className="flex-1">
                 Chamado

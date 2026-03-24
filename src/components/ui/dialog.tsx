@@ -4,6 +4,7 @@ import { Dialog as DialogPrimitive } from "radix-ui"
 
 import { cn } from "@/lib/utils"
 import { Button } from "@/components/ui/button"
+import { useShadowRoot } from "@/ui/ShadowRootContext"
 
 function Dialog({
   ...props
@@ -20,7 +21,8 @@ function DialogTrigger({
 function DialogPortal({
   ...props
 }: React.ComponentProps<typeof DialogPrimitive.Portal>) {
-  return <DialogPrimitive.Portal data-slot="dialog-portal" {...props} />
+  const container = useShadowRoot();
+  return <DialogPrimitive.Portal data-slot="dialog-portal" container={container ?? undefined} {...props} />
 }
 
 function DialogClose({

@@ -1,5 +1,13 @@
 @import "tailwindcss";
 
+@theme inline {
+  --default-font-family: "Inter", sans-serif;
+}
+
+:host {
+  font-family: "Inter", sans-serif !important;
+}
+
 @custom-variant dark (&:is(.dark *));
 
 @theme inline {
@@ -36,7 +44,8 @@
 }
 
 @layer base {
-  :root {
+  :root,
+  :host {
     --background: 0 0% 100%;
     --foreground: 0 0% 3.9%;
     --card: 0 0% 100%;
@@ -101,8 +110,5 @@
 @layer base {
   * {
     @apply border-border;
-  }
-  body {
-    @apply bg-background text-foreground;
   }
 }
