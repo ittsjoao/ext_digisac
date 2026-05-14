@@ -2,7 +2,6 @@ import { useState, useMemo } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { useAppStore } from "@/state/store";
 import { checkOpenTicket } from "@/api/tickets";
 import { toast } from "sonner";
@@ -26,6 +25,8 @@ export function ContactPicker() {
   const selectedGclickClientId = useAppStore(
     (s) => s.form.selectedGclickClientId,
   );
+  const usersFull = useAppStore((s) => s.usersFull);
+  const departments = useAppStore((s) => s.departments);
 
   const contacts = serviceId ? (contactsByService[serviceId] ?? []) : [];
 
@@ -82,9 +83,11 @@ export function ContactPicker() {
   const handleSelect = async (contactId: string, displayName: string) => {
     setChecking(true);
     try {
-      const hasOpen = await checkOpenTicket(contactId);
-      if (hasOpen) {
-        toast.error("Este contato já possui um chamado em aberto.");
+      const openTicket = await checkOpenTicket(contactId);
+      if (openTicket) {
+        const userName = usersFull.find((u) => u.id === openTicket.userId)?.name ?? "usuário desconhecido";
+        const deptName = departments.find((d) => d.id === openTicket.departmentId)?.name ?? "departamento desconhecido";
+        toast.error(`Este contato já possui um chamado em aberto com ${userName} do departamento ${deptName}.`);
         setSearch("");
         return;
       }
@@ -119,7 +122,7 @@ export function ContactPicker() {
           </button>
         </div>
       ) : showGclickMatch ? (
-        <ScrollArea className="h-[200px] rounded-md border">
+        <div className="h-[200px] overflow-y-auto overscroll-contain rounded-md border">
           {matchedContacts.matched.map(({ gclickName, digisacContact }) => {
             const displayName =
               digisacContact.internalName ?? digisacContact.name;
@@ -160,7 +163,7 @@ export function ContactPicker() {
                 Nenhum contato nesta empresa.
               </p>
             )}
-        </ScrollArea>
+        </div>
       ) : (
         <>
           <Input
@@ -177,7 +180,10 @@ export function ContactPicker() {
             </p>
           )}
           {!checking && focused && (
-            <ScrollArea className="h-[200px] rounded-md border">
+            <div
+              className="h-[200px] overflow-y-auto overscroll-contain rounded-md border"
+              onPointerDown={(e) => e.preventDefault()}
+            >
               {filtered.map((c) => {
                 const displayName = c.internalName ?? c.name;
                 const number = c.data?.number;
@@ -213,7 +219,7 @@ export function ContactPicker() {
                   Nenhum contato encontrado.
                 </p>
               )}
-            </ScrollArea>
+            </div>
           )}
         </>
       )}

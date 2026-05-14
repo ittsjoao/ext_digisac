@@ -9,6 +9,12 @@ export default defineConfig({
     description: "Extensão para abrir chamados no DigiSac",
     permissions: ["storage"],
     host_permissions: ["https://auster.digisac.co/*", "https://api.gclick.com.br/*"],
+    browser_specific_settings: {
+      gecko: {
+        id: "digisac-ticket@austercontabil.com.br",
+        strict_min_version: "109.0",
+      },
+    },
   },
   vite: () => ({
     plugins: [tailwindcss()],

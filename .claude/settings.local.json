@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(npx wxt:*)"
+      "Bash(npx wxt:*)",
+      "Bash(pnpm build *)",
+      "Bash(pnpm build:firefox)",
+      "Bash(git add *)",
+      "Bash(git commit -m ' *)"
     ]
   }
 }

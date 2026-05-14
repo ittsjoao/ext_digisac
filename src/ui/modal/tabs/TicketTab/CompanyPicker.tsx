@@ -2,7 +2,6 @@ import { useState, useMemo, useEffect } from "react";
 import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Button } from "@/components/ui/button";
-import { ScrollArea } from "@/components/ui/scroll-area";
 import { RefreshCw } from "lucide-react";
 import { useAppStore } from "@/state/store";
 import { browser } from "wxt/browser";
@@ -112,7 +111,10 @@ export function CompanyPicker() {
             </p>
           )}
           {!loading && focused && (
-            <ScrollArea className="h-[200px] rounded-md border">
+            <div
+              className="h-[200px] overflow-y-auto overscroll-contain rounded-md border"
+              onPointerDown={(e) => e.preventDefault()}
+            >
               {filtered.map((c) => (
                 <button
                   key={c.id}
@@ -133,7 +135,7 @@ export function CompanyPicker() {
                   Nenhuma empresa encontrada.
                 </p>
               )}
-            </ScrollArea>
+            </div>
           )}
         </>
       )}
