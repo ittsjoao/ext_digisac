@@ -4,7 +4,7 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/state/store";
 import { checkOpenTicket } from "@/api/tickets";
-import { searchContactByPhone, createContact } from "@/api/contacts";
+import { searchContactByPhone, createContact, listContactsByService } from "@/api/contacts";
 import { getTags, addTagToContacts } from "@/api/tags";
 import { sendRegistrationNotification, sendDuplicateNotification } from "@/api/messages";
 import { toast } from "sonner";
@@ -49,6 +49,7 @@ export function ContactPicker() {
   const selectedGclickClientId = useAppStore((s) => s.form.selectedGclickClientId);
   const usersFull = useAppStore((s) => s.usersFull);
   const departments = useAppStore((s) => s.departments);
+  const setContactsForService = useAppStore((s) => s.setContactsForService);
   const authName = useAppStore((s) => s.auth.name);
   const authDeptNames = useAppStore((s) => s.auth.departmentNames);
   const services = useAppStore((s) => s.services);
@@ -162,6 +163,8 @@ export function ContactPicker() {
 
       toast.success("Contato cadastrado com sucesso!");
       await sendRegistrationNotification(notifyParams).catch(() => {});
+      const refreshed = await listContactsByService(serviceId);
+      setContactsForService(serviceId, refreshed);
     } catch (e: any) {
       toast.error(e.message ?? "Erro ao cadastrar contato");
     } finally {

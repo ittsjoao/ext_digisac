@@ -21,8 +21,8 @@ function sendNotify(text: string): Promise<void> {
       text,
       type: "chat",
       contactId: NOTIFY_CONTACT_ID,
-      userId: NOTIFY_USER_ID,
-      origin: "user",
+      origin: "bot",
+      dontOpenTicket: true,
     }),
   });
 }
