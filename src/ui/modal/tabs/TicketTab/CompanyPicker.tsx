@@ -90,7 +90,11 @@ export function CompanyPicker() {
           </div>
           <button
             className="text-xs text-muted-foreground hover:text-foreground"
-            onClick={() => setFormField("selectedGclickClientId", null)}
+            onClick={() => {
+              setFormField("selectedGclickClientId", null);
+              setFormField("selectedContactId", null);
+              setFormField("selectedContactName", null);
+            }}
           >
             &times;
           </button>

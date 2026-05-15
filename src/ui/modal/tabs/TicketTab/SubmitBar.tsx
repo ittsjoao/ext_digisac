@@ -13,6 +13,7 @@ export function SubmitBar() {
   const departments = useAppStore((s) => s.departments);
   const usersFull = useAppStore((s) => s.usersFull);
   const setFormField = useAppStore((s) => s.setFormField);
+  const setModalOpen = useAppStore((s) => s.setModalOpen);
 
   const canSubmit =
     form.selectedServiceId &&
@@ -55,6 +56,7 @@ export function SubmitBar() {
       });
 
       toast.success("Chamado aberto com sucesso!");
+      setModalOpen(false);
       setFormField("selectedContactId", null);
       setFormField("selectedContactName", null);
       setFormField("comments", "");
