@@ -4,6 +4,9 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/state/store";
 import { checkOpenTicket } from "@/api/tickets";
+import { searchContactByPhone, createContact } from "@/api/contacts";
+import { getTags, addTagToContacts } from "@/api/tags";
+import { sendRegistrationNotification, sendDuplicateNotification } from "@/api/messages";
 import { toast } from "sonner";
 import type { ContactItem } from "@/api/types";
 
@@ -25,10 +28,17 @@ function normalizePhone(phone: string): string {
   return digits;
 }
 
+type RegisterState =
+  | { phase: "idle" }
+  | { phase: "select-dept"; gclickName: string; numero: string }
+  | { phase: "busy"; numero: string };
+
 export function ContactPicker() {
   const [search, setSearch] = useState("");
   const [focused, setFocused] = useState(false);
   const [checking, setChecking] = useState(false);
+  const [registerState, setRegisterState] = useState<RegisterState>({ phase: "idle" });
+
   const serviceId = useAppStore((s) => s.form.selectedServiceId);
   const contactsByService = useAppStore((s) => s.contactsByService);
   const selectedContactId = useAppStore((s) => s.form.selectedContactId);
@@ -36,13 +46,19 @@ export function ContactPicker() {
   const setFormField = useAppStore((s) => s.setFormField);
   const gclickEnabled = useAppStore((s) => s.gclickEnabled);
   const gclickClients = useAppStore((s) => s.gclickClients);
-  const selectedGclickClientId = useAppStore(
-    (s) => s.form.selectedGclickClientId,
-  );
+  const selectedGclickClientId = useAppStore((s) => s.form.selectedGclickClientId);
   const usersFull = useAppStore((s) => s.usersFull);
   const departments = useAppStore((s) => s.departments);
+  const authName = useAppStore((s) => s.auth.name);
+  const authDeptNames = useAppStore((s) => s.auth.departmentNames);
+  const services = useAppStore((s) => s.services);
 
   const contacts = serviceId ? (contactsByService[serviceId] ?? []) : [];
+
+  const serviceName = useMemo(
+    () => services.find((s) => s.id === serviceId)?.name ?? "",
+    [services, serviceId],
+  );
 
   const selectedCompany = useMemo(
     () => gclickClients.find((c) => c.id === selectedGclickClientId) ?? null,
@@ -115,6 +131,52 @@ export function ContactPicker() {
     }
   };
 
+  const handleRegister = async (gclickName: string, numero: string, dept: string) => {
+    if (!serviceId) return;
+    setRegisterState({ phase: "busy", numero });
+
+    const normalized = normalizePhone(numero);
+    const last8 = normalized.slice(-8);
+    const apiNumber = normalized.length === 10 ? "55" + normalized : normalized;
+    const notifyParams = { collaboratorName: authName ?? "", department: dept, serviceName };
+
+    try {
+      const existing = await searchContactByPhone(last8, serviceId);
+
+      if (existing) {
+        if (existing.tags.length > 0) {
+          toast.error("Este contato já existe no DigiSac com tags associadas.");
+          await sendDuplicateNotification(notifyParams).catch(() => {});
+          return;
+        }
+        const tags = await getTags();
+        const validoTag = tags.find((t) => t.label === "VALIDO");
+        if (!validoTag) throw new Error("Tag VALIDO não encontrada");
+        await addTagToContacts(validoTag.id, [existing.id]);
+      } else {
+        const tags = await getTags();
+        const validoTag = tags.find((t) => t.label === "VALIDO");
+        if (!validoTag) throw new Error("Tag VALIDO não encontrada");
+        await createContact({ internalName: gclickName, number: apiNumber, serviceId, tagIds: [validoTag.id] });
+      }
+
+      toast.success("Contato cadastrado com sucesso!");
+      await sendRegistrationNotification(notifyParams).catch(() => {});
+    } catch (e: any) {
+      toast.error(e.message ?? "Erro ao cadastrar contato");
+    } finally {
+      setRegisterState({ phase: "idle" });
+    }
+  };
+
+  const handleRegisterClick = (gclickName: string, numero: string) => {
+    if (authDeptNames.length > 1) {
+      setRegisterState({ phase: "select-dept", gclickName, numero });
+    } else {
+      handleRegister(gclickName, numero, authDeptNames[0] ?? "");
+    }
+  };
+
   if (!serviceId) return null;
 
   const showGclickMatch = gclickEnabled && selectedCompany && matchedContacts;
@@ -138,8 +200,8 @@ export function ContactPicker() {
       ) : showGclickMatch ? (
         <div className="h-[200px] overflow-y-auto overscroll-contain rounded-md border">
           {matchedContacts.matched.map(({ gclickName, digisacContact }) => {
-            const displayName =
-              digisacContact.internalName ?? digisacContact.name;
+            const displayName = digisacContact.internalName ?? digisacContact.name;
+            const number = digisacContact.data?.number;
             return (
               <button
                 key={digisacContact.id}
@@ -149,34 +211,67 @@ export function ContactPicker() {
               >
                 <div className="flex items-center justify-between">
                   <span>{gclickName}</span>
-                  <Badge variant="default" className="text-xs">
-                    G-Click
-                  </Badge>
+                  <Badge variant="default" className="text-xs">G-Click</Badge>
                 </div>
-                <p className="text-xs text-muted-foreground">{displayName}</p>
+                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                  <span>{displayName}</span>
+                  {number && <span>{number}</span>}
+                </div>
               </button>
             );
           })}
-          {matchedContacts.unmatched.map(({ gclickName, numero }) => (
-            <div
-              key={numero}
-              className="w-full text-left px-3 py-2 text-sm border-b last:border-b-0 opacity-50"
-            >
-              <div className="flex items-center justify-between">
-                <span>{gclickName}</span>
-                <Badge variant="secondary" className="text-xs">
-                  Apenas G-Click
-                </Badge>
+          {matchedContacts.unmatched.map(({ gclickName, numero }) => {
+            const isSelectingDept =
+              registerState.phase === "select-dept" && registerState.numero === numero;
+            const isBusy =
+              registerState.phase === "busy" && registerState.numero === numero;
+
+            return (
+              <div key={numero} className="w-full text-left px-3 py-2 text-sm border-b last:border-b-0">
+                <div className="flex items-center justify-between">
+                  <span className="opacity-50">{gclickName}</span>
+                  <div className="flex items-center gap-2">
+                    <Badge variant="secondary" className="text-xs opacity-50">
+                      Apenas G-Click
+                    </Badge>
+                    <button
+                      className="text-xs text-primary hover:underline disabled:opacity-40"
+                      onClick={() => handleRegisterClick(gclickName, numero)}
+                      disabled={registerState.phase !== "idle" || checking}
+                    >
+                      {isBusy ? "Cadastrando..." : "Cadastrar"}
+                    </button>
+                  </div>
+                </div>
+                <p className="text-xs text-muted-foreground opacity-50">{numero}</p>
+                {isSelectingDept && (
+                  <div className="mt-2 space-y-1">
+                    <p className="text-xs text-muted-foreground">Selecione seu departamento:</p>
+                    <div className="flex flex-wrap gap-1">
+                      {authDeptNames.map((dept) => (
+                        <button
+                          key={dept}
+                          className="text-xs px-2 py-1 rounded border hover:bg-accent"
+                          onClick={() => handleRegister(gclickName, numero, dept)}
+                        >
+                          {dept}
+                        </button>
+                      ))}
+                      <button
+                        className="text-xs px-2 py-1 rounded border hover:bg-accent text-muted-foreground"
+                        onClick={() => setRegisterState({ phase: "idle" })}
+                      >
+                        Cancelar
+                      </button>
+                    </div>
+                  </div>
+                )}
               </div>
-              <p className="text-xs text-muted-foreground">{numero}</p>
-            </div>
-          ))}
-          {matchedContacts.matched.length === 0 &&
-            matchedContacts.unmatched.length === 0 && (
-              <p className="p-3 text-sm text-muted-foreground">
-                Nenhum contato nesta empresa.
-              </p>
-            )}
+            );
+          })}
+          {matchedContacts.matched.length === 0 && matchedContacts.unmatched.length === 0 && (
+            <p className="p-3 text-sm text-muted-foreground">Nenhum contato nesta empresa.</p>
+          )}
         </div>
       ) : (
         <>
@@ -189,9 +284,7 @@ export function ContactPicker() {
             disabled={checking}
           />
           {checking && (
-            <p className="text-xs text-muted-foreground">
-              Verificando tickets abertos...
-            </p>
+            <p className="text-xs text-muted-foreground">Verificando tickets abertos...</p>
           )}
           {!checking && focused && (
             <div
@@ -211,9 +304,7 @@ export function ContactPicker() {
                     <div className="flex items-center justify-between">
                       <span>{displayName}</span>
                       {number && (
-                        <span className="text-xs text-muted-foreground ml-2">
-                          {number}
-                        </span>
+                        <span className="text-xs text-muted-foreground ml-2">{number}</span>
                       )}
                     </div>
                     {c.tags.length > 0 && (
@@ -229,9 +320,7 @@ export function ContactPicker() {
                 );
               })}
               {filtered.length === 0 && (
-                <p className="p-3 text-sm text-muted-foreground">
-                  Nenhum contato encontrado.
-                </p>
+                <p className="p-3 text-sm text-muted-foreground">Nenhum contato encontrado.</p>
               )}
             </div>
           )}
