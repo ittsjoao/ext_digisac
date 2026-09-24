@@ -26,3 +26,12 @@ web-ext.config.ts
 *.sw?
 src/app/config.ts
 docs
+
+# a.i files
+projeto.md
+.claude
+AGENTS.md
+CLAUDE.md
+
+# environment files
+src/app/config.ts

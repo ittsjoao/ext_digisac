@@ -1,18 +1,10 @@
-import { DIGISAC_HEADER_SELECTOR } from "./selectors";
 import { logger } from "@/utils/logger";
 
-export function observeHeader(onHeaderFound: (header: Element) => void): void {
-  const check = () => {
-    const header = document.querySelector(DIGISAC_HEADER_SELECTOR);
-    if (header && !header.querySelector("[data-digisac-ticket-btn]")) {
-      onHeaderFound(header);
-    }
-  };
+export function observePage(onChange: () => void): void {
+  onChange();
 
-  check();
-
-  const observer = new MutationObserver(() => check());
+  const observer = new MutationObserver(() => onChange());
   observer.observe(document.body, { childList: true, subtree: true });
 
-  logger.info("Header observer started");
+  logger.info("Page observer started");
 }

@@ -1,5 +1,5 @@
-import { observeHeader } from "@/dom/observer";
-import { injectButton } from "@/ui/injected/injectButton";
+import { observePage } from "@/dom/observer";
+import { syncTicketEntry } from "@/ui/injected/ticketMenu";
 import { getAuth } from "@/storage/auth";
 import { getDeptPermissions } from "@/storage/permissions";
 import { getGClickEnabled } from "@/storage/gclick";
@@ -26,8 +26,5 @@ export async function init(): Promise<void> {
   const gclickEnabled = await getGClickEnabled();
   useAppStore.getState().setGclickEnabled(gclickEnabled);
 
-  observeHeader((header) => {
-    logger.info("Header found, injecting button");
-    injectButton(header);
-  });
+  observePage(syncTicketEntry);
 }
