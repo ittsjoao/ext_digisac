@@ -1,2 +1,8 @@
-export const DIGISAC_HEADER_SELECTOR =
-  'div[style*="display: flex"][style*="justify-content: space-between"][style*="padding: 0px 16px"]';
+// Botão "+" nativo do DigiSac (abre o menu "Adicionar contato/grupo").
+// Não aparece para todos os usuários.
+export const DIGISAC_CREATE_BUTTON_SELECTOR =
+  '[data-testid="chat-button-createGroup"]';
+
+// Botão "⋮" ao lado do "+"; serve de âncora quando o "+" não existe.
+export const DIGISAC_OPTIONS_BUTTON_SELECTOR =
+  '[data-testid="chat-button-options"]';
