@@ -1,14 +1,14 @@
 {
   "Comercial": {
     "allowedServiceIds": [
-      "d9132868-9ae3-4f26-9405-0352863ab612",
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
       "d6488e2c-b7bc-4ef7-8ec4-13df2658b1ec"
     ],
     "allowedDepartmentIds": ["024879fd-6505-4654-8480-33f896cd2099"]
   },
   "Sucesso do Cliente": {
     "allowedServiceIds": [
-      "d9132868-9ae3-4f26-9405-0352863ab612",
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
       "fe34c82a-cc86-4a93-9d8e-ba6d2a1497a4"
     ],
     "allowedDepartmentIds": [
@@ -18,44 +18,53 @@
   },
   "Regularização": {
     "allowedServiceIds": [
-      "d9132868-9ae3-4f26-9405-0352863ab612",
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
       "f0972b24-90e0-4510-96be-1c7df9f820dc"
     ],
     "allowedDepartmentIds": ["9db92200-aeba-40e2-96d3-8cbc958504bb"]
   },
   "Financeiro": {
     "allowedServiceIds": [
-      "d9132868-9ae3-4f26-9405-0352863ab612",
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
       "274083a4-16b9-444e-9b4e-b04217da2672"
     ],
     "allowedDepartmentIds": ["4384cd5a-bf94-4534-b1e7-3e0061ae10a9"]
   },
   "BPO": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": [
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
+      "d9132868-9ae3-4f26-9405-0352863ab612"
+    ],
     "allowedDepartmentIds": ["3a1856f5-a8e6-4147-a6c6-2210d716d080"]
   },
   "Contábil": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": ["5a26f5e7-af97-4fa0-ac5a-33fd4cbea317"],
     "allowedDepartmentIds": ["f7fafa26-09f0-4eff-8594-84d26fec2380"]
   },
   "Célula Digital": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": [
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
+      "d9132868-9ae3-4f26-9405-0352863ab612"
+    ],
     "allowedDepartmentIds": ["2d4b33db-6876-4756-aa28-edc661b01485"]
   },
   "Célula Premium": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": [
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
+      "d9132868-9ae3-4f26-9405-0352863ab612"
+    ],
     "allowedDepartmentIds": ["6bfad449-468a-45d9-9400-bdf1704d9d17"]
   },
   "Fiscal": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": ["5a26f5e7-af97-4fa0-ac5a-33fd4cbea317"],
     "allowedDepartmentIds": ["7d5f8991-4135-46f8-8acb-1cf1d85b9fc4"]
   },
   "Legalização": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": ["5a26f5e7-af97-4fa0-ac5a-33fd4cbea317"],
     "allowedDepartmentIds": ["cf2c1fc5-b100-4053-b1e4-a794de1f5288"]
   },
   "Pessoal": {
-    "allowedServiceIds": ["d9132868-9ae3-4f26-9405-0352863ab612"],
+    "allowedServiceIds": ["5a26f5e7-af97-4fa0-ac5a-33fd4cbea317"],
     "allowedDepartmentIds": ["7ef4156b-c5ba-4416-bd33-c6c1c901dc19"]
   },
   "Recepção": {
@@ -68,7 +77,7 @@
   },
   "Reforma Tributária": {
     "allowedServiceIds": [
-      "d9132868-9ae3-4f26-9405-0352863ab612",
+      "5a26f5e7-af97-4fa0-ac5a-33fd4cbea317",
       "1b4097b4-cfd3-4d7a-b8bc-7bdf08d4da21"
     ],
     "allowedDepartmentIds": ["25b68c91-6ca7-40b8-ad27-512533a5a6d0"]
