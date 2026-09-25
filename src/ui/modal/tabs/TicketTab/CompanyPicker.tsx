@@ -11,6 +11,7 @@ export function CompanyPicker() {
   const [search, setSearch] = useState("");
   const [focused, setFocused] = useState(false);
   const [loading, setLoading] = useState(false);
+  const [progress, setProgress] = useState<{ current: number; total: number } | null>(null);
   const gclickEnabled = useAppStore((s) => s.gclickEnabled);
   const serviceId = useAppStore((s) => s.form.selectedServiceId);
   const clients = useAppStore((s) => s.gclickClients);
@@ -31,17 +32,37 @@ export function CompanyPicker() {
 
   async function loadClients(type: string) {
     setLoading(true);
+    setProgress(null);
     try {
-      const res = await browser.runtime.sendMessage({ type });
+      let res: { ok: boolean; data?: any; error?: string } | null = null;
+      for (let attempt = 0; attempt < 3; attempt++) {
+        try {
+          res = await browser.runtime.sendMessage({ type });
+          break;
+        } catch (e) {
+          if (attempt === 2) throw e;
+          await new Promise((r) => setTimeout(r, 300 * (attempt + 1)));
+        }
+      }
       if (res?.ok) {
-        setClients(res.data);
+        const all: import("@/api/types").GClickClient[] = res.data;
+        const total = all.length;
+        const steps = 20;
+        const stepSize = Math.ceil(total / steps);
+        for (let i = stepSize; i <= total + stepSize; i += stepSize) {
+          setProgress({ current: Math.min(i, total), total });
+          await new Promise((r) => setTimeout(r, 30));
+        }
+        setClients(all);
       } else {
         toast.error(res?.error ?? "Erro ao carregar empresas G-Click");
       }
-    } catch {
+    } catch (e) {
+      console.error("[CompanyPicker] sendMessage error:", e);
       toast.error("Erro ao comunicar com background");
     } finally {
       setLoading(false);
+      setProgress(null);
     }
   }
 
@@ -110,9 +131,27 @@ export function CompanyPicker() {
             disabled={loading}
           />
           {loading && (
-            <p className="text-xs text-muted-foreground">
-              Carregando empresas...
-            </p>
+            <div className="space-y-1">
+              <style>{`@keyframes gclick-indeterminate{0%{transform:translateX(-100%)}100%{transform:translateX(400%)}}`}</style>
+              <div className="relative h-1.5 w-full overflow-hidden rounded-full bg-muted">
+                {progress ? (
+                  <div
+                    className="absolute h-full rounded-full bg-primary transition-all duration-75"
+                    style={{ width: `${(progress.current / progress.total) * 100}%` }}
+                  />
+                ) : (
+                  <div
+                    className="absolute h-full w-1/3 rounded-full bg-primary"
+                    style={{ animation: "gclick-indeterminate 1.4s ease-in-out infinite" }}
+                  />
+                )}
+              </div>
+              <p className="text-xs text-muted-foreground">
+                {progress
+                  ? `Carregando empresas... ${progress.current.toLocaleString("pt-BR")} / ${progress.total.toLocaleString("pt-BR")}`
+                  : "Aguardando servidor..."}
+              </p>
+            </div>
           )}
           {!loading && focused && (
             <div

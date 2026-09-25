@@ -36,3 +36,13 @@ export async function createContact(payload: {
     body: JSON.stringify({ ...payload, defaultDepartmentId: null, customFields: [] }),
   });
 }
+
+export async function updateContact(
+  contactId: string,
+  payload: { internalName: string; tagIds: string[] },
+): Promise<void> {
+  await request(`contacts/${contactId}`, {
+    method: "PUT",
+    body: JSON.stringify(payload),
+  });
+}
