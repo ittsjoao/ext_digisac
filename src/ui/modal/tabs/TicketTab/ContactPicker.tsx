@@ -4,29 +4,12 @@ import { Label } from "@/components/ui/label";
 import { Badge } from "@/components/ui/badge";
 import { useAppStore } from "@/state/store";
 import { checkOpenTicket } from "@/api/tickets";
-import { searchContactByPhone, createContact, listContactsByService } from "@/api/contacts";
-import { getTags, addTagToContacts } from "@/api/tags";
+import { searchContactByPhone, createContact, updateContact, listContactsByService } from "@/api/contacts";
+import { getTags } from "@/api/tags";
 import { sendRegistrationNotification, sendDuplicateNotification } from "@/api/messages";
 import { toast } from "sonner";
 import type { ContactItem } from "@/api/types";
-
-function normalizePhone(phone: string): string {
-  let digits = phone.replace(/\D/g, "");
-
-  // Strip Brazilian country code if present (requires >= 12 digits to avoid false strip on short numbers)
-  if (digits.startsWith("55") && digits.length >= 12) {
-    digits = digits.slice(2);
-  }
-
-  // Normalize mobile: DDD (2) + 9 + 8-digit number = 11 digits → strip the 9 → 10 digits
-  if (digits.length === 11) {
-    digits = digits.slice(0, 2) + digits.slice(3);
-  }
-
-  // Result: 10-digit canonical form (DDD + 8-digit number) for standard BR numbers,
-  // or whatever remained after digit-strip for non-standard numbers (exact fallback).
-  return digits;
-}
+import { phoneKey as normalizePhone } from "@/utils/phone";
 
 type RegisterState =
   | { phase: "idle" }
@@ -153,7 +136,7 @@ export function ContactPicker() {
         const tags = await getTags();
         const validoTag = tags.find((t) => t.label === "VALIDO");
         if (!validoTag) throw new Error("Tag VALIDO não encontrada");
-        await addTagToContacts(validoTag.id, [existing.id]);
+        await updateContact(existing.id, { internalName: gclickName, tagIds: [validoTag.id] });
       } else {
         const tags = await getTags();
         const validoTag = tags.find((t) => t.label === "VALIDO");
@@ -213,12 +196,16 @@ export function ContactPicker() {
                 disabled={checking}
               >
                 <div className="flex items-center justify-between">
-                  <span>{gclickName}</span>
+                  <span>
+                    <span className="text-xs text-muted-foreground">Nome G-Click:</span>{" "}
+                    {gclickName}
+                  </span>
                   <Badge variant="default" className="text-xs">G-Click</Badge>
                 </div>
-                <div className="flex items-center gap-2 text-xs text-muted-foreground">
+                <div className="text-xs text-muted-foreground">
+                  <span className="font-medium">Nome DigiSac:</span>{" "}
                   <span>{displayName}</span>
-                  {number && <span>{number}</span>}
+                  {number && <span className="ml-2">{number}</span>}
                 </div>
               </button>
             );

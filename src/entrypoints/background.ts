@@ -1,6 +1,8 @@
 import { GCLICK_CLIENT_ID, GCLICK_CLIENT_SECRET } from "@/app/config";
 import type { GClickClient } from "@/api/types";
 import { getGClickClients, setGClickClients } from "@/storage/gclick";
+import { request } from "@/api/client";
+import { phoneKey } from "@/utils/phone";
 
 interface TokenCache {
   accessToken: string;
@@ -52,11 +54,45 @@ async function fetchClients(): Promise<GClickClient[]> {
   return raw.map((c: any) => ({
     id: c.id,
     nome: c.nome ?? c.apelido ?? "",
+    apelido: c.apelido ?? "",
+    status: c.status ?? "",
     inscricao: c.inscricao ?? "",
     telefones: (c.telefones ?? []).map((t: any) => ({
       nome: t.nome ?? "",
       numero: t.numero ?? "",
     })),
+  }));
+}
+
+const REFRESH_COOLDOWN_MS = 10 * 60 * 1000;
+let lastRefreshAt = 0;
+
+// Casa o contato Digisac com clientes G-Click pelo telefone normalizado.
+// Retorna no formato de /plataforma-atendimento/clientes do g2api.
+async function matchContact(contactId: string) {
+  const contact = await request<{ data?: { number?: string } }>(`contacts/${contactId}`);
+  const key = phoneKey(contact.data?.number ?? "");
+  if (key.length < 8) return [];
+
+  const find = (clients: GClickClient[]) =>
+    clients.filter((c) => c.telefones.some((t) => phoneKey(t.numero) === key));
+
+  let found = find((await getGClickClients()) ?? []);
+  // ponytail: cliente novo no G-Click só aparece após refresh; cooldown evita baixar 20k clientes a cada miss
+  if (found.length === 0 && Date.now() - lastRefreshAt > REFRESH_COOLDOWN_MS) {
+    lastRefreshAt = Date.now();
+    const clients = await fetchClients();
+    await setGClickClients(clients);
+    found = find(clients);
+  }
+
+  return found.map((c) => ({
+    id: c.id,
+    apelido: c.apelido || c.nome,
+    nome: c.nome,
+    status: c.status || "ATIVO",
+    possuiAcesso: true,
+    integra: "",
   }));
 }
 
@@ -90,6 +126,13 @@ export default defineBackground(() => {
           sendResponse({ ok: false, error: e.message });
         }
       })();
+      return true;
+    }
+
+    if (message?.type === "GCLICK_MATCH_CONTACT") {
+      matchContact(message.contactId)
+        .then((data) => sendResponse({ ok: true, data }))
+        .catch((e: any) => sendResponse({ ok: false, error: e.message }));
       return true;
     }
   });

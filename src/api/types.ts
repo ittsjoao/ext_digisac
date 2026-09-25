@@ -60,6 +60,8 @@ export interface GClickPhone {
 export interface GClickClient {
   id: number;
   nome: string;
+  apelido?: string;
+  status?: string;
   inscricao: string;
   telefones: GClickPhone[];
 }
