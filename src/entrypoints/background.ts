@@ -1,6 +1,6 @@
 import { GCLICK_CLIENT_ID, GCLICK_CLIENT_SECRET } from "@/app/config";
 import type { GClickClient } from "@/api/types";
-import { getGClickClients, setGClickClients } from "@/storage/gclick";
+import { getGClickClients, setGClickClients, setIndexProgress } from "@/storage/gclick";
 import { request } from "@/api/client";
 import { phoneKey } from "@/utils/phone";
 
@@ -39,19 +39,11 @@ async function getToken(): Promise<string> {
   return tokenCache.accessToken;
 }
 
-async function fetchClients(): Promise<GClickClient[]> {
-  const token = await getToken();
+const PAGE_SIZE = 100;
+const CONCURRENCY = 6;
 
-  const res = await fetch("https://api.gclick.com.br/clientes?size=20000", {
-    headers: { Authorization: `Bearer ${token}` },
-  });
-
-  if (!res.ok) throw new Error(`G-Click fetch failed: ${res.status}`);
-
-  const json = await res.json();
-  const raw = json.content ?? json;
-
-  return raw.map((c: any) => ({
+function mapClient(c: any): GClickClient {
+  return {
     id: c.id,
     nome: c.nome ?? c.apelido ?? "",
     apelido: c.apelido ?? "",
@@ -61,7 +53,65 @@ async function fetchClients(): Promise<GClickClient[]> {
       nome: t.nome ?? "",
       numero: t.numero ?? "",
     })),
-  }));
+  };
+}
+
+async function fetchPage(token: string, page: number) {
+  const res = await fetch(`https://api.gclick.com.br/clientes?page=${page}&size=${PAGE_SIZE}`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`G-Click fetch failed: ${res.status}`);
+  return res.json() as Promise<{ content: any[]; totalElements: number; totalPages: number }>;
+}
+
+// Páginas de 100 em paralelo: ~7s para 2k clientes contra ~28s de uma requisição size=20000.
+// O progresso vai para o storage (gclick_index_progress) e é lido pelo CompanyPicker e pelo embed.
+async function indexClients(): Promise<GClickClient[]> {
+  let loaded = 0;
+  let total = 0;
+  await setIndexProgress({ loaded, total, running: true });
+  try {
+    const token = await getToken();
+    const first = await fetchPage(token, 0);
+    total = first.totalElements;
+    const pages: any[][] = [first.content];
+    loaded = first.content.length;
+    await setIndexProgress({ loaded, total, running: true });
+
+    const queue = Array.from({ length: Math.max(first.totalPages - 1, 0) }, (_, i) => i + 1);
+    const worker = async () => {
+      for (let p = queue.shift(); p !== undefined; p = queue.shift()) {
+        const page = await fetchPage(token, p);
+        pages[p] = page.content;
+        loaded += page.content.length;
+        await setIndexProgress({ loaded, total, running: true });
+      }
+    };
+    await Promise.all(Array.from({ length: CONCURRENCY }, worker));
+
+    const clients = pages.flat().map(mapClient);
+    await setGClickClients(clients);
+    await setIndexProgress({ loaded, total, running: false });
+    return clients;
+  } catch (e: any) {
+    await setIndexProgress({ loaded, total, running: false, error: e.message });
+    throw e;
+  }
+}
+
+// Modal e embed podem pedir ao mesmo tempo; uma indexação só.
+let indexing: Promise<GClickClient[]> | null = null;
+function fetchClients(): Promise<GClickClient[]> {
+  return (indexing ??= indexClients().finally(() => (indexing = null)));
+}
+
+async function fetchResponsaveis(clienteId: number) {
+  const token = await getToken();
+  const res = await fetch(`https://api.gclick.com.br/clientes/${clienteId}/responsaveis`, {
+    headers: { Authorization: `Bearer ${token}` },
+  });
+  if (!res.ok) throw new Error(`G-Click responsáveis failed: ${res.status}`);
+  return res.json();
 }
 
 const REFRESH_COOLDOWN_MS = 10 * 60 * 1000;
@@ -81,9 +131,7 @@ async function matchContact(contactId: string) {
   // ponytail: cliente novo no G-Click só aparece após refresh; cooldown evita baixar 20k clientes a cada miss
   if (found.length === 0 && Date.now() - lastRefreshAt > REFRESH_COOLDOWN_MS) {
     lastRefreshAt = Date.now();
-    const clients = await fetchClients();
-    await setGClickClients(clients);
-    found = find(clients);
+    found = find(await fetchClients());
   }
 
   return found.map((c) => ({
@@ -106,9 +154,7 @@ export default defineBackground(() => {
             sendResponse({ ok: true, data: cached });
             return;
           }
-          const clients = await fetchClients();
-          await setGClickClients(clients);
-          sendResponse({ ok: true, data: clients });
+          sendResponse({ ok: true, data: await fetchClients() });
         } catch (e: any) {
           sendResponse({ ok: false, error: e.message });
         }
@@ -119,13 +165,18 @@ export default defineBackground(() => {
     if (message?.type === "GCLICK_REFRESH_CLIENTS") {
       (async () => {
         try {
-          const clients = await fetchClients();
-          await setGClickClients(clients);
-          sendResponse({ ok: true, data: clients });
+          sendResponse({ ok: true, data: await fetchClients() });
         } catch (e: any) {
           sendResponse({ ok: false, error: e.message });
         }
       })();
+      return true;
+    }
+
+    if (message?.type === "GCLICK_GET_RESPONSAVEIS") {
+      fetchResponsaveis(message.clienteId)
+        .then((data) => sendResponse({ ok: true, data }))
+        .catch((e: any) => sendResponse({ ok: false, error: e.message }));
       return true;
     }
 

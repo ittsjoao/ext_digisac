@@ -6,6 +6,7 @@ import { RefreshCw } from "lucide-react";
 import { useAppStore } from "@/state/store";
 import { browser } from "wxt/browser";
 import { toast } from "sonner";
+import { watchIndexProgress } from "@/storage/gclick";
 
 export function CompanyPicker() {
   const [search, setSearch] = useState("");
@@ -33,6 +34,10 @@ export function CompanyPicker() {
   async function loadClients(type: string) {
     setLoading(true);
     setProgress(null);
+    // Progresso real das páginas baixadas pelo background (mesmo /clientes usado pelo embed).
+    const unwatch = watchIndexProgress((p) => {
+      if (p.running && p.total > 0) setProgress({ current: p.loaded, total: p.total });
+    });
     try {
       let res: { ok: boolean; data?: any; error?: string } | null = null;
       for (let attempt = 0; attempt < 3; attempt++) {
@@ -45,15 +50,7 @@ export function CompanyPicker() {
         }
       }
       if (res?.ok) {
-        const all: import("@/api/types").GClickClient[] = res.data;
-        const total = all.length;
-        const steps = 20;
-        const stepSize = Math.ceil(total / steps);
-        for (let i = stepSize; i <= total + stepSize; i += stepSize) {
-          setProgress({ current: Math.min(i, total), total });
-          await new Promise((r) => setTimeout(r, 30));
-        }
-        setClients(all);
+        setClients(res.data);
       } else {
         toast.error(res?.error ?? "Erro ao carregar empresas G-Click");
       }
@@ -61,6 +58,7 @@ export function CompanyPicker() {
       console.error("[CompanyPicker] sendMessage error:", e);
       toast.error("Erro ao comunicar com background");
     } finally {
+      unwatch();
       setLoading(false);
       setProgress(null);
     }

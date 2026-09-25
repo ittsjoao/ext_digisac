@@ -23,3 +23,31 @@ export async function setGClickClients(
 ): Promise<void> {
   await browser.storage.local.set({ [KEY_CLIENTS]: clients });
 }
+
+const KEY_PROGRESS = "gclick_index_progress";
+
+export interface IndexProgress {
+  loaded: number;
+  total: number;
+  running: boolean;
+  error?: string;
+}
+
+export async function getIndexProgress(): Promise<IndexProgress | null> {
+  const result = await browser.storage.local.get(KEY_PROGRESS);
+  return (result[KEY_PROGRESS] as IndexProgress) ?? null;
+}
+
+export async function setIndexProgress(progress: IndexProgress): Promise<void> {
+  await browser.storage.local.set({ [KEY_PROGRESS]: progress });
+}
+
+// Progresso da indexação publicado pelo background; qualquer contexto da extensão pode ouvir.
+export function watchIndexProgress(cb: (p: IndexProgress) => void): () => void {
+  const listener = (changes: Record<string, { newValue?: unknown }>, area: string) => {
+    const p = changes[KEY_PROGRESS]?.newValue;
+    if (area === "local" && p) cb(p as IndexProgress);
+  };
+  browser.storage.onChanged.addListener(listener);
+  return () => browser.storage.onChanged.removeListener(listener);
+}
