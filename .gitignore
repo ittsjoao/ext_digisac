@@ -35,3 +35,7 @@ CLAUDE.md
 
 # environment files
 src/app/config.ts
+
+# arquivos sensíveis / locais
+*.har
+.omc
