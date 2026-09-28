@@ -31,7 +31,6 @@ projeto.md
 .claude
 
 # environment files
-extension/src/app/config.ts
 .env.local
 .env.*.local
 .env.production

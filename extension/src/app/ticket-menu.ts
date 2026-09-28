@@ -1,4 +1,4 @@
-import { useAppStore } from "@/state/store";
+import { useUiStore } from "@/stores/ui";
 import {
   DIGISAC_CREATE_BUTTON_SELECTOR,
   DIGISAC_OPTIONS_BUTTON_SELECTOR,
@@ -44,7 +44,7 @@ export function syncTicketEntry(): void {
 }
 
 function openTicketModal(): void {
-  useAppStore.getState().setModalOpen(true);
+  useUiStore.getState().setModalOpen(true);
 }
 
 function createMenuItem(
