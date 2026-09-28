@@ -88,7 +88,7 @@ public final class DigisacRestGateway implements DigisacGateway {
 
     @Override
     public Me me(String host, String bearer) {
-        MeJson me = call(() -> get(host, bearer, "me", params("include[0]", "departments")).body(MeJson.class));
+        MeJson me = call(() -> get(host, bearer, "me", params("include[0]", "departments", "include[1]", "roles")).body(MeJson.class));
         if (me == null) {
             throw new AppException(ErrorCode.UPSTREAM_ERROR, "DigiSac indisponível.");
         }

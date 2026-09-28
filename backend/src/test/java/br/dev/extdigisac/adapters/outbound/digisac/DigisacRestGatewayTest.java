@@ -45,6 +45,8 @@ class DigisacRestGatewayTest {
     @Test
     void meExtractsOnlyIdentityFields() {
         server.expect(requestTo(startsWith(API + "me?")))
+                // Sem include de roles o DigiSac não devolve roles, e ninguém vira admin.
+                .andExpect(requestTo(containsString("include%5B1%5D=roles")))
                 .andExpect(header("Authorization", "Bearer sess"))
                 .andRespond(withSuccess("""
                         {"id":"u1","name":"Ana","email":"a@x","accountId":"acc-1","otpSecretKey":"NAO-USAR",
