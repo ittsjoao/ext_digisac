@@ -95,6 +95,8 @@ class DigisacRestGatewayTest {
     void contactsByServiceMapsNumberAndTags() {
         server.expect(requestTo(startsWith(API + "contacts?")))
                 .andExpect(requestTo(containsString("where%5BserviceId%5D=s1")))
+                // O DigiSac ordena por lastMessageAt; sem a coluna nos attributes ele responde 500.
+                .andExpect(requestTo(containsString("%22lastMessageAt%22")))
                 .andExpect(header("Authorization", "Bearer tok"))
                 .andRespond(withSuccess("""
                         {"data":[{"id":"c1","name":"Joao","internalName":"Empresa X","serviceId":"s1",

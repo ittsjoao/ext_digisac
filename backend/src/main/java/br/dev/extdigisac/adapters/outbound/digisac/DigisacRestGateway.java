@@ -122,7 +122,8 @@ public final class DigisacRestGateway implements DigisacGateway {
 
     @Override
     public List<Contact> contactsByService(Auth a, String serviceId) {
-        String query = "{\"attributes\":[\"id\",\"name\",\"internalName\",\"serviceId\",\"data\"],"
+        // lastMessageAt é obrigatório: o DigiSac ordena por ele e responde 500 se a coluna ficar de fora.
+        String query = "{\"attributes\":[\"id\",\"name\",\"internalName\",\"serviceId\",\"lastMessageAt\",\"data\"],"
                 + "\"include\":[{\"model\":\"tags\",\"attributes\":[\"id\",\"label\"],\"required\":true}]}";
         return page(a, "contacts", params("where[serviceId]", seg(serviceId), "perPage", "2000", "query", query), CONTACTS)
                 .stream().map(DigisacRestGateway::toContact).toList();
