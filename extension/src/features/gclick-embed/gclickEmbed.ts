@@ -1,5 +1,10 @@
 // UI injetada no embed G-Click (iframe Angular): DOM puro com estilos inline, sem React.
-import type { IndexProgress } from "@/storage/gclick";
+export interface IndexProgress {
+  loaded: number;
+  total: number;
+  running: boolean;
+  error?: string | null;
+}
 import type { Departamento } from "@/utils/responsaveis";
 
 const GREEN = "#309933";

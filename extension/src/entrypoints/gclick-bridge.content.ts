@@ -1,6 +1,4 @@
-import { logger } from "@/utils/logger";
-import { getIndexProgress, watchIndexProgress } from "@/storage/gclick";
-import { groupResponsaveis } from "@/utils/responsaveis";
+import { ApiError, api } from "@/lib/backend";
 import {
   hideIndexing,
   mountResponsaveisButton,
@@ -8,11 +6,18 @@ import {
   selectedClientName,
   showIndexing,
   showIndexingError,
-} from "@/ui/injected/gclickEmbed";
+} from "@/features/gclick-embed/gclickEmbed";
+import type { IndexProgress } from "@/features/gclick-embed/gclickEmbed";
+import { logger } from "@/utils/logger";
+import { groupResponsaveis } from "@/utils/responsaveis";
+import type { Responsavel } from "@/utils/responsaveis";
 
 type EmbedClient = { id: number; nome?: string; apelido?: string };
 
-// Ponte entre o script injetado no embed G-Click (gclick-xhr.ts) e o background.
+const POLL_MS = 500;
+
+// Ponte entre o script injetado no embed G-Click (gclick-xhr.ts) e o backend (via background).
+// Sem sessão ou com G-Click desligado na empresa, o casamento devolve [] e o G-Click segue nativo.
 export default defineContentScript({
   matches: ["https://g2.gclick.com.br/vertical-intro*"],
   allFrames: true,
@@ -21,15 +26,28 @@ export default defineContentScript({
     let clients: EmbedClient[] = [];
     // Casamentos aguardando resposta; o overlay só aparece se há alguém esperando a indexação.
     let pending = 0;
+    let poller: ReturnType<typeof setInterval> | null = null;
 
-    function onIndexing(p: Awaited<ReturnType<typeof getIndexProgress>>) {
-      window.postMessage({ type: "ext-digisac:indexing" }, location.origin);
-      showIndexing(p);
+    function stopPolling() {
+      if (poller) clearInterval(poller);
+      poller = null;
     }
 
-    watchIndexProgress((p) => {
-      if (pending > 0 && p.running) onIndexing(p);
-    });
+    function startPolling() {
+      if (poller) return;
+      poller = setInterval(async () => {
+        if (pending === 0) return stopPolling();
+        try {
+          const p = await api<IndexProgress>("GET", "/gclick/index-status");
+          if (pending > 0 && p.running) {
+            window.postMessage({ type: "ext-digisac:indexing" }, location.origin);
+            showIndexing(p);
+          }
+        } catch {
+          // sem sessão ou G-Click desligado: nada a mostrar
+        }
+      }, POLL_MS);
+    }
 
     window.addEventListener("message", async (e) => {
       if (e.source !== window || e.origin !== location.origin) return;
@@ -42,24 +60,24 @@ export default defineContentScript({
 
       const { id, contactId } = e.data;
       pending++;
-      const progress = await getIndexProgress();
-      if (progress?.running) onIndexing(progress);
-
-      const res = await browser.runtime
-        .sendMessage({ type: "GCLICK_MATCH_CONTACT", contactId })
-        .catch((err: Error) => ({ ok: false, error: err.message }));
+      startPolling();
+      let matched: unknown[] = [];
+      let ok = true;
+      try {
+        matched = (await api<unknown[]>("GET", `/gclick/match?contactId=${encodeURIComponent(String(contactId))}`)) ?? [];
+      } catch (err) {
+        ok = false;
+        const message = err instanceof Error ? err.message : "Erro desconhecido";
+        logger.warn("G-Click: falha ao casar contato", err instanceof ApiError ? err.code : "", message);
+        showIndexingError(message);
+      }
       pending--;
-      if (!res?.ok) {
-        logger.warn("G-Click: falha ao casar contato", contactId, res?.error);
-        showIndexingError(res?.error ?? "Erro desconhecido");
-      } else if (pending === 0) {
-        hideIndexing();
+      if (pending === 0) {
+        stopPolling();
+        if (ok) hideIndexing();
       }
 
-      window.postMessage(
-        { type: "ext-digisac:match-result", id, clients: res?.ok ? res.data : [] },
-        location.origin,
-      );
+      window.postMessage({ type: "ext-digisac:match-result", id, clients: matched }, location.origin);
     });
 
     mountResponsaveisButton(() => {
@@ -70,11 +88,7 @@ export default defineContentScript({
       openResponsaveis(
         nome,
         client
-          ? async () => {
-              const res = await browser.runtime.sendMessage({ type: "GCLICK_GET_RESPONSAVEIS", clienteId: client.id });
-              if (!res?.ok) throw new Error(res?.error ?? "Erro ao carregar responsáveis.");
-              return groupResponsaveis(res.data);
-            }
+          ? async () => groupResponsaveis(await api<Responsavel[]>("GET", `/gclick/clients/${client.id}/responsaveis`))
           : null,
       );
     });
