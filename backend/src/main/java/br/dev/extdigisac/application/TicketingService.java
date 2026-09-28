@@ -120,7 +120,12 @@ public class TicketingService {
 
     public Optional<OpenTicketInfo> openTicketOf(Actor a, String contactId) {
         Tenant t = access.requireActive(a.tenantId());
-        return digisac.call(t, (d, x) -> d.openTicket(x, contactId)).map(o -> describe(t, o));
+        Optional<Contact> contact = digisac.call(t, (d, x) -> d.contact(x, contactId));
+        if (contact.isEmpty()) {
+            return Optional.empty();
+        }
+        allowed(a).requireService(contact.get().serviceId());
+        return openTicketInfo(t, contactId);
     }
 
     public TicketRecord openTicket(Actor a, OpenTicketCommand c) {
@@ -133,7 +138,7 @@ public class TicketingService {
         if (!c.serviceId().equals(contact.serviceId())) {
             throw new AppException(ErrorCode.FORBIDDEN, "O contato não pertence ao serviço informado.");
         }
-        Optional<OpenTicketInfo> open = openTicketOf(a, c.contactId());
+        Optional<OpenTicketInfo> open = openTicketInfo(t, c.contactId());
         if (open.isPresent()) {
             throw new AppException(ErrorCode.OPEN_TICKET_EXISTS, "Este contato já possui um chamado em aberto com "
                     + open.get().userName() + " do departamento " + open.get().departmentName() + ".");
@@ -147,6 +152,10 @@ public class TicketingService {
                 clock.instant());
         history.insert(r);
         return r;
+    }
+
+    private Optional<OpenTicketInfo> openTicketInfo(Tenant t, String contactId) {
+        return digisac.call(t, (d, x) -> d.openTicket(x, contactId)).map(o -> describe(t, o));
     }
 
     private OpenTicketInfo describe(Tenant t, OpenTicket o) {

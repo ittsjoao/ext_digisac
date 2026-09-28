@@ -167,9 +167,22 @@ class TicketingServiceTest {
 
     @Test
     void openTicketOfDescribesWhoAttends() {
+        digisac.contacts.put("c1", new Contact("c1", "Joao", null, "s1", "5534999998888", List.of()));
         digisac.openTickets.put("c1", new OpenTicket("u-sumiu", "d2"));
         var info = service.openTicketOf(ana, "c1").orElseThrow();
         assertEquals("usuário desconhecido", info.userName());
         assertEquals("Comercial", info.departmentName());
+    }
+
+    @Test
+    void openTicketOfRefusesForbiddenService() {
+        digisac.contacts.put("c1", new Contact("c1", "Joao", null, "s2", "5534999998888", List.of()));
+        digisac.openTickets.put("c1", new OpenTicket("u9", "d2"));
+        assertCode(ErrorCode.FORBIDDEN, () -> service.openTicketOf(ana, "c1"));
+    }
+
+    @Test
+    void openTicketOfIsEmptyForUnknownContact() {
+        assertTrue(service.openTicketOf(ana, "c404").isEmpty());
     }
 }
