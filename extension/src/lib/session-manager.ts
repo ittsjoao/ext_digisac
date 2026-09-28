@@ -1,4 +1,5 @@
 import type { ApiMethod, ApiResult, ExtMessage, SessionState, SessionTenant, SessionUser } from "./messages.ts";
+import { isSessionCode } from "./session-state.ts";
 
 export interface StoredSession {
   bearer: string | null;
@@ -35,17 +36,6 @@ const EMPTY: StoredSession = { bearer: null, token: null, expiresAt: null, user:
 const EXPIRY_SKEW_MS = 30_000;
 const NO_SESSION = "Sessão do DigiSac ainda não identificada. Recarregue a página.";
 const OUTSIDE_DIGISAC = "Abra a extensão dentro do DigiSac.";
-const SESSION_CODES = new Set([
-  "UNAUTHENTICATED",
-  "TENANT_NOT_FOUND",
-  "TENANT_PENDING",
-  "TENANT_BLOCKED",
-  "LICENSE_EXPIRED",
-  "CREDENTIAL_INVALID",
-  "EXTENSION_OUTDATED",
-  "ACCOUNT_MISMATCH",
-  "INVALID_HOST",
-]);
 
 export function hostFromUrl(url: string | undefined): string | null {
   if (!url) return null;
@@ -163,7 +153,7 @@ export function createSessionManager(deps: SessionManagerDeps) {
       const renewed = await exchange(host, { ...s, token: null, expiresAt: null });
       r = renewed.status === "ready" ? await call(method, path, body, (await load(host)).token) : toFailure(renewed);
     }
-    if (!r.ok && SESSION_CODES.has(r.code)) await deps.store.set(host, { ...EMPTY, bearer: s.bearer });
+    if (!r.ok && isSessionCode(r.code)) await deps.store.set(host, { ...EMPTY, bearer: s.bearer });
     return r;
   }
 
