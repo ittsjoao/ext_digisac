@@ -5,6 +5,8 @@ import { observePage } from "@/dom/observer";
 import { sendBearer } from "@/lib/backend";
 import { useSessionStore } from "@/stores/session";
 
+// A captura e o envio inicial do bearer ficam em digisac-session.content.ts (document_start).
+// Aqui só reagimos a um bearer novo: o reenvio é idempotente e garante a ordem antes do refresh.
 function onBearer(e: MessageEvent) {
   if (e.source !== window || e.origin !== location.origin) return;
   if (e.data?.type !== "ext-digisac:bearer" || typeof e.data.bearer !== "string") return;
@@ -18,16 +20,9 @@ function onBearer(e: MessageEvent) {
 
 export default defineContentScript({
   matches: ["https://*.digisac.co/*"],
-  runAt: "document_start",
   cssInjectionMode: "ui",
   async main(ctx) {
-    // A captura precisa entrar antes do DigiSac fazer as primeiras requests.
     window.addEventListener("message", onBearer);
-    await injectScript("/session-capture.js", { keepInDom: true });
-
-    if (document.readyState === "loading") {
-      await new Promise<void>((resolve) => document.addEventListener("DOMContentLoaded", () => resolve(), { once: true }));
-    }
 
     const ui = await createShadowRootUi(ctx, {
       name: "digisac-ticket",
