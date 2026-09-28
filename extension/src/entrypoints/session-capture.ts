@@ -7,7 +7,7 @@ export default defineUnlistedScript(() => {
   let last = "";
 
   function publish(authorization: string | null | undefined, url: string) {
-    const bearer = extractBearer(authorization, url);
+    const bearer = extractBearer(authorization, url, location.origin);
     if (!bearer || bearer === last) return;
     last = bearer;
     window.postMessage({ type: "ext-digisac:bearer", bearer }, location.origin);
