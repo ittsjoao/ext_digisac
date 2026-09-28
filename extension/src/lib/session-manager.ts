@@ -35,6 +35,17 @@ const EMPTY: StoredSession = { bearer: null, token: null, expiresAt: null, user:
 const EXPIRY_SKEW_MS = 30_000;
 const NO_SESSION = "Sessão do DigiSac ainda não identificada. Recarregue a página.";
 const OUTSIDE_DIGISAC = "Abra a extensão dentro do DigiSac.";
+const SESSION_CODES = new Set([
+  "UNAUTHENTICATED",
+  "TENANT_NOT_FOUND",
+  "TENANT_PENDING",
+  "TENANT_BLOCKED",
+  "LICENSE_EXPIRED",
+  "CREDENTIAL_INVALID",
+  "EXTENSION_OUTDATED",
+  "ACCOUNT_MISMATCH",
+  "INVALID_HOST",
+]);
 
 export function hostFromUrl(url: string | undefined): string | null {
   if (!url) return null;
@@ -147,11 +158,13 @@ export function createSessionManager(deps: SessionManagerDeps) {
     const state = await getSession(host);
     if (state.status !== "ready") return toFailure(state);
     const s = await load(host);
-    const r = await call(method, path, body, s.token);
-    if (r.ok || r.status !== 401 || r.code !== "TOKEN_EXPIRED") return r;
-    const renewed = await exchange(host, { ...s, token: null, expiresAt: null });
-    if (renewed.status !== "ready") return toFailure(renewed);
-    return call(method, path, body, (await load(host)).token);
+    let r = await call(method, path, body, s.token);
+    if (!r.ok && r.status === 401 && r.code === "TOKEN_EXPIRED") {
+      const renewed = await exchange(host, { ...s, token: null, expiresAt: null });
+      r = renewed.status === "ready" ? await call(method, path, body, (await load(host)).token) : toFailure(renewed);
+    }
+    if (!r.ok && SESSION_CODES.has(r.code)) await deps.store.set(host, { ...EMPTY, bearer: s.bearer });
+    return r;
   }
 
   async function withBearer(host: string, method: ApiMethod, path: string, payload: Record<string, unknown>): Promise<ApiResult> {

@@ -178,6 +178,27 @@ test("api sem sessão devolve UNAUTHENTICATED; com licença bloqueada devolve o 
   assert.deepEqual(r2, { ok: false, status: 0, code: "TENANT_BLOCKED", message: "Empresa bloqueada.", details: { contact: "c" } });
 });
 
+test("erro de sessão no meio da sessão descarta o token e o próximo session:get devolve o erro", async () => {
+  let auths = 0;
+  const { manager, calls } = setup({
+    "POST /auth/session": () =>
+      ++auths === 1
+        ? { status: 200, body: SESSION_OK }
+        : { status: 403, body: { code: "TENANT_BLOCKED", message: "Empresa bloqueada.", contact: "c" } },
+    "GET /catalog": () => ({ status: 403, body: { code: "TENANT_BLOCKED", message: "Empresa bloqueada." } }),
+  });
+  await manager.handle({ type: "session:bearer", bearer: "sess-1" }, SENDER);
+  const r = await manager.handle({ type: "api", method: "GET", path: "/catalog" }, SENDER);
+  assert.equal((r as { code: string }).code, "TENANT_BLOCKED");
+  assert.deepEqual(await manager.handle({ type: "session:get" }, SENDER), {
+    status: "error",
+    code: "TENANT_BLOCKED",
+    message: "Empresa bloqueada.",
+    contact: "c",
+  });
+  assert.equal(calls.filter((c) => c.path === "/auth/session").length, 2);
+});
+
 test("204 devolve data null", async () => {
   const { manager } = setup({ "POST /auth/session": authOk, "DELETE /permissions/d1": () => ({ status: 204 }) });
   await manager.handle({ type: "session:bearer", bearer: "sess-1" }, SENDER);
