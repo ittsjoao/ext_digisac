@@ -116,11 +116,23 @@ class SessionServiceTest {
     void rejectedCompanyTokenMarksCredentialInvalid() {
         var td = new TenantDigisac(digisac, new PlainCipher(), tenants, access, clock);
         digisac.rejectedTokens.add("tok");
+        access.requireActive(tenant.id());
 
         assertCode(ErrorCode.CREDENTIAL_INVALID, () -> td.call(tenant, DigisacGateway::services));
 
         assertEquals(TenantStatus.CREDENCIAL_INVALIDA, tenants.findById(tenant.id()).orElseThrow().status());
         assertCode(ErrorCode.CREDENTIAL_INVALID, () -> access.requireActive(tenant.id()));
+    }
+
+    @Test
+    void rejectedCompanyTokenDoesNotOverrideBlockedStatus() {
+        var td = new TenantDigisac(digisac, new PlainCipher(), tenants, access, clock);
+        digisac.rejectedTokens.add("tok");
+        tenants.update(tenant.withStatus(TenantStatus.BLOQUEADA, Samples.NOW));
+
+        assertCode(ErrorCode.CREDENTIAL_INVALID, () -> td.call(tenant, DigisacGateway::services));
+
+        assertEquals(TenantStatus.BLOQUEADA, tenants.findById(tenant.id()).orElseThrow().status());
     }
 
     @Test

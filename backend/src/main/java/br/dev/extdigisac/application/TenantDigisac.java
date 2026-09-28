@@ -35,6 +35,7 @@ public class TenantDigisac {
             return fn.apply(gateway, auth);
         } catch (DigisacGateway.UnauthorizedException e) {
             tenants.findById(tenant.id())
+                    .filter(cur -> cur.status() == TenantStatus.ATIVA)
                     .ifPresent(cur -> tenants.update(cur.withStatus(TenantStatus.CREDENCIAL_INVALIDA, clock.instant())));
             access.invalidate(tenant.id());
             throw new AppException(ErrorCode.CREDENTIAL_INVALID,
