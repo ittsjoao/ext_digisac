@@ -13,8 +13,15 @@ A documentação do projeto vive na **wiki local**, não no Outline:
 ## Git
 
 Commits e push direto na `main` (sem branch de feature).
-Nunca versionar: `*.har` (tokens em texto puro), `src/app/config.ts`, `.claude/`, `.omc/`.
+Nunca versionar: `*.har` (tokens em texto puro), `extension/.env.production`, `extension/.env.local`, `.claude/`, `.omc/`.
 `AGENTS.md` e `CLAUDE.md` (só importa este arquivo) são versionados.
+
+## Extensão
+
+- Código em `extension/` (WXT + React, features em `src/features/`). Comandos a partir de `extension/`.
+- Testes: `pnpm test` (lógica pura com `node --test`); tipos: `pnpm compile`.
+- Build de produção exige `extension/.env.production` com `WXT_BACKEND_URL` (modelo em `.env.example`); `pnpm dev` usa `http://localhost:8080`.
+- Só o background fala com o backend; a UI usa `lib/backend.ts`. Nenhum token no código da extensão.
 
 ## Backend
 

@@ -1,60 +1,29 @@
-# DigiSac Ticket Extension
+# ext_digisac
 
-Extensão Chrome (MV3) para abrir chamados no DigiSac.
+Extensão de navegador para abrir chamados no DigiSac com permissões por departamento e integração G-Click, atendendo várias empresas com licença mensal.
 
-## Instalação
+| Pasta | O que é |
+|---|---|
+| `extension/` | extensão WXT + React (Chrome MV3 e Firefox) |
+| `backend/` | API Java 21 / Spring Boot: sessão pelo `/me` do DigiSac, licença, permissões, DigiSac e G-Click (ver `backend/README.md`) |
+
+## Extensão
 
 ```bash
+cd extension
 pnpm install
+pnpm test          # lógica pura
+pnpm dev           # Chrome com backend em http://localhost:8080
 ```
 
-## Configuração
-
-Antes de rodar o projeto, crie o arquivo de configuração:
+Build de produção:
 
 ```bash
-cp src/app/config.ts.exemple src/app/config.ts
+cp .env.example .env.production   # ajuste WXT_BACKEND_URL
+pnpm build         # Chrome → .output/chrome-mv3
+pnpm build:firefox # Firefox → .output/firefox-mv2
 ```
 
-Edite `src/app/config.ts` com seus dados:
+Carregar no Chrome: `chrome://extensions` → Modo do desenvolvedor → Carregar sem compactação → `extension/.output/chrome-mv3`.
 
-```ts
-export const BASE_URL = "https://sua.url/api/v1";
-export const ADMIN_EMAILS: string[] = ["emails.admins@email.com.br"];
-export const CONTENT_MATCHES = ["*://sua.url/*"];
-export const STORAGE_KEY_TOKEN = "suaApiKey";
-```
-
-| Campo | Descrição |
-|-------|-----------|
-| `BASE_URL` | URL base da API DigiSac |
-| `ADMIN_EMAILS` | E-mails com acesso à aba Admin |
-| `CONTENT_MATCHES` | Padrão de URL onde a extensão será injetada |
-| `STORAGE_KEY_TOKEN` | Token Bearer da API |
-
-> **Importante:** O arquivo `config.ts` está no `.gitignore` e nunca deve ser commitado.
-
-## Desenvolvimento
-
-```bash
-pnpm dev
-```
-
-## Build
-
-```bash
-pnpm build
-```
-
-## Carregar no Chrome
-
-1. Acesse `chrome://extensions/`
-2. Ative "Modo do desenvolvedor"
-3. Clique "Carregar sem compactação"
-4. Selecione a pasta `.output/chrome-mv3`
-
-## Permissões por Departamento
-
-As permissões padrão ficam em `src/app/department-permissions.json`. O admin pode editá-las pela aba **Admin** da extensão, e as alterações são salvas no `browser.storage.local`.
-
-Para exportar/importar permissões, use os botões **JSON** e **Restaurar** na aba Admin.
+A extensão não guarda nenhum token: o login usa a sessão do DigiSac aberta no navegador e toda chamada passa pelo backend.
