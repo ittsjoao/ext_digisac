@@ -15,3 +15,9 @@ A documentação do projeto vive na **wiki local**, não no Outline:
 Commits e push direto na `main` (sem branch de feature).
 Nunca versionar: `*.har` (tokens em texto puro), `src/app/config.ts`, `.claude/`, `.omc/`.
 `AGENTS.md` e `CLAUDE.md` (só importa este arquivo) são versionados.
+
+## Backend
+
+- Código em `backend/` (Java 21, Spring Boot, hexagonal). Rodar e publicar: `backend/README.md`.
+- Testes: `cd backend && ./mvnw test` (precisa de Docker).
+- Segredos só em variáveis de ambiente do Dokploy; nunca no repo nem na wiki.
