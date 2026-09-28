@@ -81,6 +81,14 @@ class OnboardingServiceTest {
     }
 
     @Test
+    void reregistrationFromAnotherAccountIsRejected() {
+        onboarding.register(register("tok-acc1", null));
+        digisac.meByToken.put("sess-admin-2", new DigisacGateway.Me("u-admin2", "Admin2", "acc-2", Set.of(), true));
+        var cmd = new RegisterCommand("acme.digisac.co", "sess-admin-2", "Acme", "tok-acc1", null);
+        assertCode(ErrorCode.ACCOUNT_MISMATCH, () -> onboarding.register(cmd));
+    }
+
+    @Test
     void rejectedTokensAreValidationErrors() {
         assertCode(ErrorCode.VALIDATION_ERROR, () -> onboarding.register(register("tok-invalido", null)));
         gclick.rejectedClientIds.add("gc-ruim");

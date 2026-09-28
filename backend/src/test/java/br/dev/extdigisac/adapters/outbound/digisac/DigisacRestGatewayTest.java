@@ -4,6 +4,7 @@ import static br.dev.extdigisac.testing.AppAssertions.assertCode;
 import static org.hamcrest.Matchers.containsString;
 import static org.hamcrest.Matchers.startsWith;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
@@ -67,6 +68,25 @@ class DigisacRestGatewayTest {
     void serverErrorBecomesUpstreamError() {
         server.expect(requestTo(startsWith(API + "services?"))).andRespond(withServerError());
         assertCode(ErrorCode.UPSTREAM_ERROR, () -> gateway.services(AUTH));
+    }
+
+    @Test
+    void unexpectedContentTypeBecomesUpstreamError() {
+        server.expect(requestTo(startsWith(API + "services?")))
+                .andRespond(withSuccess("<html>manutenção</html>", MediaType.TEXT_HTML));
+        assertCode(ErrorCode.UPSTREAM_ERROR, () -> gateway.services(AUTH));
+    }
+
+    @Test
+    void emptyMeBodyBecomesUpstreamError() {
+        server.expect(requestTo(startsWith(API + "me?"))).andRespond(withSuccess());
+        assertCode(ErrorCode.UPSTREAM_ERROR, () -> gateway.me("acme.digisac.co", "sess"));
+    }
+
+    @Test
+    void authToStringHidesToken() {
+        DigisacGateway.Auth a = new DigisacGateway.Auth("acme.digisac.co", "supersecret123");
+        assertFalse(a.toString().contains("supersecret123"));
     }
 
     @Test

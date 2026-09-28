@@ -7,7 +7,7 @@ spring:
 app:
   master-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
   session-secret: test-session-secret-0123456789abcdef
-  admin-key: test-admin-key
+  admin-key: test-admin-key-0123456789abcdefghij
   min-ext-version: 5.1.0
   owner-contact: suporte@example.com
   admin-origin: http://localhost:8765

@@ -7,6 +7,11 @@ import java.util.Set;
 public interface DigisacGateway {
 
     record Auth(String host, String token) {
+
+        @Override
+        public String toString() {
+            return "Auth[host=" + host + ", token=***]";
+        }
     }
 
     record Me(String id, String name, String accountId, Set<String> departmentIds, boolean admin) {

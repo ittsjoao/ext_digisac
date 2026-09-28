@@ -74,6 +74,23 @@ class SessionApiTest extends ApiTestBase {
     }
 
     @Test
+    void credentialInvalidTellsWhetherUserIsAdmin() throws Exception {
+        createTenant("acme.digisac.co", TenantStatus.CREDENCIAL_INVALIDA);
+
+        mvc.perform(post("/auth/session").header("X-Ext-Version", VERSION).contentType(MediaType.APPLICATION_JSON)
+                        .content(sessionBody("acme.digisac.co", "sess-admin")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CREDENTIAL_INVALID"))
+                .andExpect(jsonPath("$.isAdmin").value(true));
+
+        mvc.perform(post("/auth/session").header("X-Ext-Version", VERSION).contentType(MediaType.APPLICATION_JSON)
+                        .content(sessionBody("acme.digisac.co", "sess-ana")))
+                .andExpect(status().isForbidden())
+                .andExpect(jsonPath("$.code").value("CREDENTIAL_INVALID"))
+                .andExpect(jsonPath("$.isAdmin").value(false));
+    }
+
+    @Test
     void invalidBodyAndHost() throws Exception {
         mvc.perform(post("/auth/session").header("X-Ext-Version", VERSION).contentType(MediaType.APPLICATION_JSON)
                         .content("{}"))

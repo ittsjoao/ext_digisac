@@ -5,6 +5,11 @@ import java.util.List;
 public interface GClickGateway {
 
     record Credentials(String clientId, String clientSecret) {
+
+        @Override
+        public String toString() {
+            return "Credentials[clientId=" + clientId + ", clientSecret=***]";
+        }
     }
 
     record Phone(String nome, String numero) {

@@ -1,7 +1,9 @@
 package br.dev.extdigisac.adapters.outbound.gclick;
 
+import static br.dev.extdigisac.testing.AppAssertions.assertCode;
 import static org.hamcrest.Matchers.containsString;
 import static org.junit.jupiter.api.Assertions.assertEquals;
+import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.content;
 import static org.springframework.test.web.client.match.MockRestRequestMatchers.header;
@@ -12,6 +14,7 @@ import static org.springframework.test.web.client.response.MockRestResponseCreat
 import static org.springframework.test.web.client.response.MockRestResponseCreators.withUnauthorizedRequest;
 
 import br.dev.extdigisac.application.port.out.GClickGateway;
+import br.dev.extdigisac.domain.ErrorCode;
 import java.time.Clock;
 import java.time.Instant;
 import java.time.ZoneOffset;
@@ -94,5 +97,19 @@ class GClickRestGatewayTest {
     void rejectedCredentialsFailVerify() {
         server.expect(requestTo(BASE + "/oauth/token")).andRespond(withBadRequest());
         assertThrows(GClickGateway.UnauthorizedException.class, () -> gateway.verify(CREDS));
+    }
+
+    @Test
+    void unexpectedContentTypeBecomesUpstreamError() {
+        expectToken("t1");
+        server.expect(requestTo(BASE + "/clientes?page=0&size=100"))
+                .andRespond(withSuccess("<html>manutenção</html>", MediaType.TEXT_HTML));
+        assertCode(ErrorCode.UPSTREAM_ERROR, () -> gateway.clients(CREDS, 0, 100));
+    }
+
+    @Test
+    void credentialsToStringHidesSecret() {
+        GClickGateway.Credentials c = new GClickGateway.Credentials("id-1", "supersecret123");
+        assertFalse(c.toString().contains("supersecret123"));
     }
 }

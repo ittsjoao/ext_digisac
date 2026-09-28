@@ -54,6 +54,9 @@ public class OnboardingService {
         if (existing.isPresent() && existing.get().status() != TenantStatus.PENDENTE) {
             throw new AppException(ErrorCode.VALIDATION_ERROR, "Empresa já cadastrada.");
         }
+        if (existing.isPresent() && !existing.get().digisacAccountId().equals(me.accountId())) {
+            throw new AppException(ErrorCode.ACCOUNT_MISMATCH, "A conta DigiSac não corresponde à empresa cadastrada.");
+        }
         String name = Texts.requireText(c.name(), "Informe o nome da empresa.");
         String token = Texts.requireText(c.digisacToken(), "Informe o token de API do DigiSac.");
         verifyDigisacToken(host, token, me.accountId());

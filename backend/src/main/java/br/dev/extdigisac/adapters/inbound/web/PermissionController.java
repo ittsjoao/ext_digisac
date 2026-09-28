@@ -2,7 +2,9 @@ package br.dev.extdigisac.adapters.inbound.web;
 
 import br.dev.extdigisac.application.PermissionService;
 import br.dev.extdigisac.domain.Actor;
+import br.dev.extdigisac.domain.AppException;
 import br.dev.extdigisac.domain.DeptPermission;
+import br.dev.extdigisac.domain.ErrorCode;
 import java.util.List;
 import java.util.Set;
 import org.springframework.http.HttpStatus;
@@ -36,10 +38,18 @@ public class PermissionController {
 
     @PutMapping("/permissions/{departmentId}")
     DeptPermission put(Actor actor, @PathVariable String departmentId, @RequestBody PermissionRequest r) {
+        requireNoBlankOrNull(r.serviceIds());
+        requireNoBlankOrNull(r.targetDepartmentIds());
         return permissions.put(actor, new DeptPermission(departmentId,
                 Boolean.TRUE.equals(r.allServices()), r.serviceIds() == null ? Set.of() : Set.copyOf(r.serviceIds()),
                 Boolean.TRUE.equals(r.allTargets()),
                 r.targetDepartmentIds() == null ? Set.of() : Set.copyOf(r.targetDepartmentIds())));
+    }
+
+    private static void requireNoBlankOrNull(List<String> ids) {
+        if (ids != null && ids.stream().anyMatch(id -> id == null || id.isBlank())) {
+            throw new AppException(ErrorCode.VALIDATION_ERROR, "Lista de permissões inválida.");
+        }
     }
 
     @DeleteMapping("/permissions/{departmentId}")

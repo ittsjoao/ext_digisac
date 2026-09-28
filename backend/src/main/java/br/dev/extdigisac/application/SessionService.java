@@ -38,7 +38,11 @@ public class SessionService {
         if (!tenant.digisacAccountId().equals(me.accountId())) {
             throw new AppException(ErrorCode.ACCOUNT_MISMATCH, "A conta DigiSac não corresponde à empresa cadastrada.");
         }
-        tenant.requireAccess(LocalDate.ofInstant(clock.instant(), Tenant.ZONE));
+        try {
+            tenant.requireAccess(LocalDate.ofInstant(clock.instant(), Tenant.ZONE));
+        } catch (AppException e) {
+            throw new AppException(e.code(), e.getMessage(), Map.of("isAdmin", me.admin()));
+        }
         Actor actor = new Actor(tenant.id(), me.id(), me.name(), me.departmentIds(), me.admin());
         return new Session(tokens.issue(actor), actor, tenant);
     }

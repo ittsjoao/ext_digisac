@@ -31,7 +31,7 @@ import org.springframework.web.context.WebApplicationContext;
 public abstract class ApiTestBase {
 
     protected static final String VERSION = "5.1.0";
-    protected static final String ADMIN_KEY = "test-admin-key";
+    protected static final String ADMIN_KEY = "test-admin-key-0123456789abcdefghij";
 
     @Autowired
     private WebApplicationContext context;

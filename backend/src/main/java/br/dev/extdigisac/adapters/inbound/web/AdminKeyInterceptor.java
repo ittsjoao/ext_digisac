@@ -15,6 +15,9 @@ public class AdminKeyInterceptor implements HandlerInterceptor {
     private final byte[] key;
 
     public AdminKeyInterceptor(String adminKey) {
+        if (adminKey != null && adminKey.length() < 32) {
+            throw new IllegalArgumentException("ADMIN_KEY precisa de pelo menos 32 caracteres");
+        }
         this.key = adminKey == null ? new byte[0] : adminKey.getBytes(UTF_8);
     }
 

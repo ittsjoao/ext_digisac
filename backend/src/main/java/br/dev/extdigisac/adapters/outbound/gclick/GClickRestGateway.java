@@ -20,6 +20,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 public final class GClickRestGateway implements GClickGateway {
 
@@ -114,6 +115,8 @@ public final class GClickRestGateway implements GClickGateway {
                     "G-Click recusou a requisição (" + e.getStatusCode().value() + ").");
         } catch (HttpServerErrorException | ResourceAccessException e) {
             throw new AppException(ErrorCode.UPSTREAM_ERROR, "G-Click indisponível.");
+        } catch (RestClientException e) {
+            throw new AppException(ErrorCode.UPSTREAM_ERROR, "G-Click indisponível.");
         }
     }
 
@@ -133,6 +136,11 @@ public final class GClickRestGateway implements GClickGateway {
         } catch (HttpClientErrorException e) {
             throw new UnauthorizedException();
         } catch (HttpServerErrorException | ResourceAccessException e) {
+            throw new AppException(ErrorCode.UPSTREAM_ERROR, "G-Click indisponível.");
+        } catch (RestClientException e) {
+            throw new AppException(ErrorCode.UPSTREAM_ERROR, "G-Click indisponível.");
+        }
+        if (t == null) {
             throw new AppException(ErrorCode.UPSTREAM_ERROR, "G-Click indisponível.");
         }
         tokens.put(c.clientId(), new Token(t.accessToken(), clock.instant().plusSeconds(Math.max(t.expiresIn() - 60, 0))));

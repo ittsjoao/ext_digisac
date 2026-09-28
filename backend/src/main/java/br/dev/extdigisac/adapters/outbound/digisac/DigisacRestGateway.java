@@ -23,6 +23,7 @@ import org.springframework.web.client.HttpClientErrorException;
 import org.springframework.web.client.HttpServerErrorException;
 import org.springframework.web.client.ResourceAccessException;
 import org.springframework.web.client.RestClient;
+import org.springframework.web.client.RestClientException;
 
 public final class DigisacRestGateway implements DigisacGateway {
 
@@ -88,6 +89,9 @@ public final class DigisacRestGateway implements DigisacGateway {
     @Override
     public Me me(String host, String bearer) {
         MeJson me = call(() -> get(host, bearer, "me", params("include[0]", "departments")).body(MeJson.class));
+        if (me == null) {
+            throw new AppException(ErrorCode.UPSTREAM_ERROR, "DigiSac indisponível.");
+        }
         Set<String> depts = me.departments() == null ? Set.of()
                 : me.departments().stream().map(IdJson::id).collect(Collectors.toUnmodifiableSet());
         boolean admin = me.roles() != null && me.roles().stream().anyMatch(RoleJson::admin);
@@ -228,6 +232,8 @@ public final class DigisacRestGateway implements DigisacGateway {
             throw new AppException(ErrorCode.UPSTREAM_ERROR,
                     "DigiSac recusou a requisição (" + e.getStatusCode().value() + ").");
         } catch (HttpServerErrorException | ResourceAccessException e) {
+            throw new AppException(ErrorCode.UPSTREAM_ERROR, "DigiSac indisponível.");
+        } catch (RestClientException e) {
             throw new AppException(ErrorCode.UPSTREAM_ERROR, "DigiSac indisponível.");
         }
     }

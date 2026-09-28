@@ -18,10 +18,11 @@ Precisa de JDK 21 e Docker rodando (Testcontainers sobe um Postgres).
 | `DB_USER`, `DB_PASS` | credenciais do Postgres |
 | `APP_MASTER_KEY` | 32 bytes em base64 (`openssl rand -base64 32`); cifra os tokens das empresas |
 | `SESSION_SECRET` | 32+ caracteres aleatórios (`openssl rand -base64 48`); assina o token de sessão |
-| `ADMIN_KEY` | chave do painel local (`openssl rand -base64 32`) |
+| `ADMIN_KEY` | chave do painel local (`openssl rand -base64 32`), mínimo 32 caracteres |
 | `MIN_EXT_VERSION` | versão mínima aceita da extensão (ex.: `5.1.0`) |
 | `OWNER_CONTACT` | contato exibido quando a licença está pendente, bloqueada ou vencida |
 | `ADMIN_ORIGIN` | origem do painel local (padrão `http://localhost:8765`) |
+| `APP_RATE_LIMIT_PER_MINUTE` | limite por IP/minuto em /auth/session e cadastro (padrão 120) |
 
 Perder a `APP_MASTER_KEY` torna os tokens gravados irrecuperáveis: guarde-a no cofre, separada do backup do banco.
 

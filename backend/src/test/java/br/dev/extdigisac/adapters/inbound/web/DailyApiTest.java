@@ -111,6 +111,14 @@ class DailyApiTest extends ApiTestBase {
     }
 
     @Test
+    void nullPermissionElementIsRejected() throws Exception {
+        mvc.perform(as(put("/permissions/d1"), admin).contentType(MediaType.APPLICATION_JSON)
+                        .content("{\"serviceIds\":[null]}"))
+                .andExpect(status().isBadRequest())
+                .andExpect(jsonPath("$.code").value("VALIDATION_ERROR"));
+    }
+
+    @Test
     void gclickNeedsTheIntegrationEnabled() throws Exception {
         mvc.perform(as(get("/gclick/clients").param("q", "padaria"), ana))
                 .andExpect(status().isForbidden());

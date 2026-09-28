@@ -22,5 +22,5 @@ app:
   min-ext-version: ${MIN_EXT_VERSION:0.0.0}
   owner-contact: ${OWNER_CONTACT:}
   admin-origin: ${ADMIN_ORIGIN:http://localhost:8765}
-  rate-limit-per-minute: 20
+  rate-limit-per-minute: ${APP_RATE_LIMIT_PER_MINUTE:120}
   session-ttl: 1h

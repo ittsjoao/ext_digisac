@@ -124,7 +124,11 @@ public class TicketingService {
         if (contact.isEmpty()) {
             return Optional.empty();
         }
-        allowed(a).requireService(contact.get().serviceId());
+        String serviceId = contact.get().serviceId();
+        if (serviceId == null) {
+            throw new AppException(ErrorCode.FORBIDDEN, "Serviço não permitido para o seu departamento.");
+        }
+        allowed(a).requireService(serviceId);
         return openTicketInfo(t, contactId);
     }
 
