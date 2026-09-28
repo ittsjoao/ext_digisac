@@ -42,6 +42,10 @@ export function TenantForm({ mode, onDone }: TenantFormProps) {
       if (register) await registerTenant({ name: name.trim(), digisacToken: token.trim(), gclick });
       else await updateCredentials({ digisacToken: token.trim() || undefined, gclick });
       toast.success(register ? "Cadastro enviado. Aguarde a liberação." : "Credenciais atualizadas.");
+      // Não deixa segredo no estado: na aba Configurações o formulário continua montado.
+      setToken("");
+      setClientId("");
+      setClientSecret("");
       onDone();
     } catch (e) {
       reportError(e, "Erro ao enviar os dados");
@@ -57,7 +61,7 @@ export function TenantForm({ mode, onDone }: TenantFormProps) {
         <p className="text-xs text-muted-foreground">
           {register
             ? "Sua empresa ainda não usa a extensão. Como administrador do DigiSac, envie os dados para liberação."
-            : "O token da empresa foi recusado. Informe um token novo."}
+            : "Informe o token novo do DigiSac e/ou as credenciais do G-Click. O que ficar em branco não muda."}
         </p>
       </div>
       {register && (

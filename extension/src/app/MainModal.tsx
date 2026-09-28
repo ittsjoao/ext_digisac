@@ -79,6 +79,7 @@ export function MainModal() {
             </TabsContent>
             <TabsContent value="settings">
               <SettingsTab />
+              {isAdmin && <TenantForm mode="credentials" onDone={refresh} />}
             </TabsContent>
             {isAdmin && (
               <TabsContent value="admin">
