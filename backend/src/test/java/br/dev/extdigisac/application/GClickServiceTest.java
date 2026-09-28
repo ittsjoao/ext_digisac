@@ -159,4 +159,14 @@ class GClickServiceTest {
         gclick.responsaveis.put(900L, List.of(new GClickGateway.Responsavel(1, "Bia", "b@x", new GClickGateway.Cargo("Fiscal - Líder"))));
         assertEquals("Bia", service.responsaveis(ana, 900).get(0).nome());
     }
+
+    @Test
+    void evictThenLoadUsesFreshData() {
+        service.search(ana, "padaria");
+        gclick.all.add(client(902, "Novissima Empresa", "11.222.333/0001-44", "(34) 98888-7777"));
+        index.evict(tenant.id());
+        var results = service.search(ana, "novissima");
+        assertEquals(1, results.size());
+        assertEquals(902L, results.get(0).id());
+    }
 }

@@ -77,6 +77,7 @@ public class GClickIndex {
     public void evict(UUID tenantId) {
         snapshots.remove(tenantId);
         progress.remove(tenantId);
+        running.remove(tenantId);
     }
 
     private CompletableFuture<Snapshot> refresh(UUID tenantId, Credentials credentials) {
@@ -88,9 +89,11 @@ public class GClickIndex {
         background.execute(() -> {
             try {
                 Snapshot s = load(tenantId, credentials);
-                snapshots.put(tenantId, s);
+                if (running.get(tenantId) == mine) {
+                    snapshots.put(tenantId, s);
+                }
                 mine.complete(s);
-            } catch (RuntimeException e) {
+            } catch (Throwable e) {
                 mine.completeExceptionally(e);
             } finally {
                 running.remove(tenantId, mine);
