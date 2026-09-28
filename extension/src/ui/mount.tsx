@@ -1,7 +1,7 @@
 import React from "react";
 import { createRoot, type Root } from "react-dom/client";
 import { MainModal } from "./modal/MainModal";
-import { ShadowRootContext } from "./ShadowRootContext";
+import { ShadowRootContext } from "@/components/shadow-root";
 
 let root: Root | null = null;
 

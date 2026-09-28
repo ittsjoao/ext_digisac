@@ -5,7 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs";
 import { Toaster } from "@/components/ui/sonner";
 import { useAppStore } from "@/state/store";
 import { isAdmin } from "@/app/permissions";
-import { useShadowRoot } from "@/ui/ShadowRootContext";
+import { useShadowRoot } from "@/components/shadow-root";
 import { TicketTab } from "./tabs/TicketTab/TicketTab";
 import { SettingsTab } from "./tabs/SettingsTab";
 import { AdminTab } from "./tabs/AdminTab/AdminTab";
