@@ -26,6 +26,9 @@ export function MainModal() {
   useEffect(() => {
     if (!open) return;
     setActiveTab("ticket");
+    // Erro de catálogo (ex.: NO_PERMISSION_RULE) não fica em cache: ao abrir, o TicketTab tenta de novo.
+    const ticket = useTicketStore.getState();
+    if (ticket.catalogError) ticket.setCatalog(null, null);
     void refresh();
   }, [open, refresh]);
 

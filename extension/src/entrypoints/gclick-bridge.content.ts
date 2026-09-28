@@ -88,7 +88,7 @@ export default defineContentScript({
       openResponsaveis(
         nome,
         client
-          ? async () => groupResponsaveis(await api<Responsavel[]>("GET", `/gclick/clients/${client.id}/responsaveis`))
+          ? async () => groupResponsaveis(await api<Responsavel[]>("GET", `/gclick/clients/${encodeURIComponent(String(client.id))}/responsaveis`))
           : null,
       );
     });
