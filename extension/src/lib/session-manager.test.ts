@@ -10,7 +10,7 @@ const USER = { id: "u1", name: "Ana", isAdmin: false };
 const TENANT = { name: "Acme", gclickEnabled: true, validUntil: null };
 const SESSION_OK = { token: "t1", expiresAt: "2026-09-28T13:00:00Z", user: USER, tenant: TENANT };
 
-type Handler = (body: any) => { status: number; body?: unknown };
+type Handler = (body: any) => { status: number; body?: unknown } | Promise<{ status: number; body?: unknown }>;
 
 function setup(routes: Record<string, Handler>) {
   const calls: { method: string; path: string; headers: Record<string, string>; body: any }[] = [];
@@ -24,7 +24,7 @@ function setup(routes: Record<string, Handler>) {
     calls.push({ method, path, headers, body });
     const handler = routes[`${method} ${path}`];
     if (!handler) return new Response(JSON.stringify({ code: "NOT_FOUND", message: "rota inexistente" }), { status: 404 });
-    const r = handler(body);
+    const r = await handler(body);
     return new Response(r.body === undefined ? null : JSON.stringify(r.body), { status: r.status });
   }) as typeof fetch;
   const manager = createSessionManager({
@@ -41,6 +41,7 @@ function setup(routes: Record<string, Handler>) {
   });
   return { manager, calls, data, advance: (ms: number) => (clock += ms) };
 }
+
 
 const authOk: Handler = () => ({ status: 200, body: SESSION_OK });
 
@@ -119,6 +120,40 @@ test("bearer diferente descarta o token; o mesmo bearer não", async () => {
   await manager.handle({ type: "session:get" }, SENDER);
   assert.equal(calls.length, 2);
   assert.equal(calls[1].body.sessionBearer, "sess-2");
+});
+
+test("bearer novo durante a troca não é sobrescrito pelo antigo nem fica com o token dele", async () => {
+  let auths = 0;
+  let env: ReturnType<typeof setup>;
+  env = setup({
+    "POST /auth/session": async (body) => {
+      if (++auths === 1) {
+        await env.manager.handle({ type: "session:bearer", bearer: "sess-2" }, SENDER);
+        return { status: 200, body: { ...SESSION_OK, token: "t-old", user: { ...USER, id: "u-old" } } };
+      }
+      return { status: 200, body: { ...SESSION_OK, token: body.sessionBearer === "sess-2" ? "t-new" : "t-bad" } };
+    },
+  });
+  await env.manager.handle({ type: "session:bearer", bearer: "sess-1" }, SENDER);
+  const state = await env.manager.handle({ type: "session:get" }, SENDER);
+  assert.deepEqual(state, { status: "ready", user: USER, tenant: TENANT });
+  assert.equal(env.data.get(HOST)!.bearer, "sess-2");
+  assert.equal(env.data.get(HOST)!.token, "t-new");
+  assert.equal(env.calls[1].body.sessionBearer, "sess-2");
+});
+
+test("erro de sessão não apaga um bearer novo que chegou durante a chamada", async () => {
+  let env: ReturnType<typeof setup>;
+  env = setup({
+    "POST /auth/session": authOk,
+    "GET /catalog": async () => {
+      await env.manager.handle({ type: "session:bearer", bearer: "sess-2" }, SENDER);
+      return { status: 403, body: { code: "TENANT_BLOCKED", message: "Empresa bloqueada." } };
+    },
+  });
+  await env.manager.handle({ type: "session:bearer", bearer: "sess-1" }, SENDER);
+  await env.manager.handle({ type: "api", method: "GET", path: "/catalog" }, SENDER);
+  assert.equal(env.data.get(HOST)!.bearer, "sess-2");
 });
 
 test("erro do login vira estado de erro com os detalhes conhecidos", async () => {

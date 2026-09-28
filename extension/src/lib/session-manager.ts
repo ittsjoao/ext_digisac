@@ -75,6 +75,23 @@ export function createSessionManager(deps: SessionManagerDeps) {
     return { ...EMPTY, ...((await deps.store.get(host)) ?? {}) };
   }
 
+  // Leituras-e-escritas do store em fila: nenhuma escrita intercala entre o load e o set de outra.
+  let queue: Promise<unknown> = Promise.resolve();
+  function serialized<T>(fn: () => Promise<T>): Promise<T> {
+    const run = queue.then(fn, fn);
+    queue = run.catch(() => undefined);
+    return run;
+  }
+
+  /** Grava só se o bearer guardado ainda for o da request; false = chegou um bearer mais novo no meio. */
+  function writeIfBearer(host: string, bearer: string | null, value: StoredSession): Promise<boolean> {
+    return serialized(async () => {
+      if ((await load(host)).bearer !== bearer) return false;
+      await deps.store.set(host, value);
+      return true;
+    });
+  }
+
   async function call<T>(method: ApiMethod, path: string, body?: unknown, token?: string | null): Promise<ApiResult<T>> {
     const headers: Record<string, string> = { "X-Ext-Version": deps.version };
     if (token) headers.Authorization = `Bearer ${token}`;
@@ -122,13 +139,15 @@ export function createSessionManager(deps: SessionManagerDeps) {
     if (!r.ok) return { status: "error", code: r.code, message: r.message, ...sessionExtras(r.details) };
     if (!r.data) return { status: "error", code: "UPSTREAM_ERROR", message: "Resposta vazia do servidor." };
     const d = r.data;
-    await deps.store.set(host, {
+    const stored = await writeIfBearer(host, s.bearer, {
       bearer: s.bearer,
       token: d.token,
       expiresAt: Date.parse(d.expiresAt),
       user: d.user,
       tenant: d.tenant,
     });
+    // Bearer trocou durante a troca: descarta o resultado e troca o bearer novo.
+    if (!stored) return getSession(host);
     return { status: "ready", user: d.user, tenant: d.tenant };
   }
 
@@ -138,10 +157,12 @@ export function createSessionManager(deps: SessionManagerDeps) {
     return exchange(host, s);
   }
 
-  async function setBearer(host: string, bearer: string): Promise<void> {
-    const s = await load(host);
-    if (s.bearer === bearer) return;
-    await deps.store.set(host, { ...EMPTY, bearer });
+  function setBearer(host: string, bearer: string): Promise<void> {
+    return serialized(async () => {
+      const s = await load(host);
+      if (s.bearer === bearer) return;
+      await deps.store.set(host, { ...EMPTY, bearer });
+    });
   }
 
   async function authorizedCall(host: string, method: ApiMethod, path: string, body?: unknown): Promise<ApiResult> {
@@ -153,7 +174,7 @@ export function createSessionManager(deps: SessionManagerDeps) {
       const renewed = await exchange(host, { ...s, token: null, expiresAt: null });
       r = renewed.status === "ready" ? await call(method, path, body, (await load(host)).token) : toFailure(renewed);
     }
-    if (!r.ok && isSessionCode(r.code)) await deps.store.set(host, { ...EMPTY, bearer: s.bearer });
+    if (!r.ok && isSessionCode(r.code)) await writeIfBearer(host, s.bearer, { ...EMPTY, bearer: s.bearer });
     return r;
   }
 
@@ -161,7 +182,7 @@ export function createSessionManager(deps: SessionManagerDeps) {
     const s = await load(host);
     if (!s.bearer) return toFailure({ status: "waiting" });
     const r = await call(method, path, { host, sessionBearer: s.bearer, ...payload });
-    if (r.ok) await deps.store.set(host, { ...EMPTY, bearer: s.bearer });
+    if (r.ok) await writeIfBearer(host, s.bearer, { ...EMPTY, bearer: s.bearer });
     return r;
   }
 
