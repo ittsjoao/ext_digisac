@@ -1,6 +1,6 @@
 import { test } from "node:test";
 import { strict as assert } from "node:assert";
-import { isSessionCode, screenFor } from "./session-state.ts";
+import { isBackendDown, isSessionCode, screenFor } from "./session-state.ts";
 import type { SessionState } from "./messages.ts";
 
 type ErrorExtras = { canRegister?: boolean; isAdmin?: boolean; contact?: string };
@@ -73,12 +73,35 @@ test("sessão inválida, versão antiga e erro genérico", () => {
     text: "msg EXTENSION_OUTDATED",
     retry: false,
   });
-  assert.deepEqual(screenFor(err("NETWORK_ERROR")), {
+  assert.deepEqual(screenFor(err("UPSTREAM_ERROR")), {
     kind: "message",
     title: "Não foi possível carregar",
-    text: "msg NETWORK_ERROR",
+    text: "msg UPSTREAM_ERROR",
     retry: true,
   });
+});
+
+test("backend fora do ar: manutenção com o contato do build", () => {
+  for (const code of ["NETWORK_ERROR", "HTTP_502", "HTTP_503", "HTTP_504"]) {
+    assert.deepEqual(screenFor(err(code), "suporte@x"), {
+      kind: "message",
+      title: "Servidor em manutenção",
+      text: "Por favor, aguarde.",
+      contact: "suporte@x",
+      retry: true,
+    });
+  }
+  assert.deepEqual(screenFor(err("NETWORK_ERROR")), {
+    kind: "message",
+    title: "Servidor em manutenção",
+    text: "Por favor, aguarde.",
+    retry: true,
+  });
+});
+
+test("códigos de indisponibilidade do backend", () => {
+  for (const code of ["NETWORK_ERROR", "HTTP_502", "HTTP_503", "HTTP_504"]) assert.ok(isBackendDown(code), code);
+  for (const code of ["UPSTREAM_ERROR", "HTTP_500", "TENANT_BLOCKED"]) assert.ok(!isBackendDown(code), code);
 });
 
 test("códigos de sessão", () => {

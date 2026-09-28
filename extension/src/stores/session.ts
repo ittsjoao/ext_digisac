@@ -2,7 +2,7 @@ import { create } from "zustand";
 import { toast } from "sonner";
 import { ApiError, sessionGet } from "@/lib/backend";
 import type { SessionState } from "@/lib/messages";
-import { isSessionCode } from "@/lib/session-state";
+import { isBackendDown, isSessionCode } from "@/lib/session-state";
 
 interface SessionStore {
   state: SessionState | null;
@@ -26,9 +26,9 @@ export const useSessionStore = create<SessionStore>((set) => ({
   },
 }));
 
-/** Erro de sessão refaz session:get (o modal troca de tela); o resto vira toast. */
+/** Erro de sessão ou backend fora do ar refaz session:get (o modal troca de tela); o resto vira toast. */
 export function reportError(e: unknown, fallback = "Erro inesperado."): void {
-  if (e instanceof ApiError && isSessionCode(e.code)) {
+  if (e instanceof ApiError && (isSessionCode(e.code) || isBackendDown(e.code))) {
     void useSessionStore.getState().refresh();
     return;
   }

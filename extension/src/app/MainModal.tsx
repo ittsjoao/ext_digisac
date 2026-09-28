@@ -38,7 +38,7 @@ export function MainModal() {
     useTicketStore.getState().clear();
   }, [sessionKey]);
 
-  const screen = session ? screenFor(session) : null;
+  const screen = session ? screenFor(session, import.meta.env.WXT_SUPPORT_CONTACT) : null;
   const isAdmin = session?.status === "ready" && session.user.isAdmin;
 
   function body() {

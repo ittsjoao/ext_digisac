@@ -256,6 +256,25 @@ test("falha de rede vira NETWORK_ERROR", async () => {
   assert.equal((r as { code: string }).code, "NETWORK_ERROR");
 });
 
+test("backend fora do ar numa chamada descarta o token e o próximo session:get tenta de novo", async () => {
+  let down = false;
+  const { manager, calls } = setup({
+    "POST /auth/session": () => {
+      if (down) throw new TypeError("Failed to fetch");
+      return { status: 200, body: SESSION_OK };
+    },
+    "GET /catalog": () => {
+      down = true;
+      throw new TypeError("Failed to fetch");
+    },
+  });
+  await manager.handle({ type: "session:bearer", bearer: "sess-1" }, SENDER);
+  await manager.handle({ type: "api", method: "GET", path: "/catalog" }, SENDER);
+  const state = await manager.handle({ type: "session:get" }, SENDER);
+  assert.equal((state as { code: string }).code, "NETWORK_ERROR");
+  assert.equal(calls.filter((c) => c.path === "/auth/session").length, 2);
+});
+
 test("cadastro e credenciais levam host e bearer, limpam o token e não devolvem segredos", async () => {
   const { manager, calls, data } = setup({
     "POST /auth/session": authOk,

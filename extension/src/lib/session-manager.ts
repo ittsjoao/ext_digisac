@@ -1,5 +1,5 @@
 import type { ApiMethod, ApiResult, ExtMessage, SessionState, SessionTenant, SessionUser } from "./messages.ts";
-import { isSessionCode } from "./session-state.ts";
+import { isBackendDown, isSessionCode } from "./session-state.ts";
 
 export interface StoredSession {
   bearer: string | null;
@@ -174,7 +174,7 @@ export function createSessionManager(deps: SessionManagerDeps) {
       const renewed = await exchange(host, { ...s, token: null, expiresAt: null });
       r = renewed.status === "ready" ? await call(method, path, body, (await load(host)).token) : toFailure(renewed);
     }
-    if (!r.ok && isSessionCode(r.code)) await writeIfBearer(host, s.bearer, { ...EMPTY, bearer: s.bearer });
+    if (!r.ok && (isSessionCode(r.code) || isBackendDown(r.code))) await writeIfBearer(host, s.bearer, { ...EMPTY, bearer: s.bearer });
     return r;
   }
 
