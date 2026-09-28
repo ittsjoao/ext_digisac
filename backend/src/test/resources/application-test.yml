@@ -1,0 +1,14 @@
+spring:
+  datasource:
+    url: jdbc:postgresql://localhost/unused
+    username: unused
+    password: unused
+
+app:
+  master-key: AAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAAA=
+  session-secret: test-session-secret-0123456789abcdef
+  admin-key: test-admin-key
+  min-ext-version: 5.1.0
+  owner-contact: suporte@example.com
+  admin-origin: http://localhost:8765
+  rate-limit-per-minute: 1000

@@ -1,0 +1,26 @@
+spring:
+  application:
+    name: backend
+  threads:
+    virtual:
+      enabled: true
+  datasource:
+    url: ${DB_URL}
+    username: ${DB_USER}
+    password: ${DB_PASS}
+
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health
+
+app:
+  master-key: ${APP_MASTER_KEY}
+  session-secret: ${SESSION_SECRET}
+  admin-key: ${ADMIN_KEY}
+  min-ext-version: ${MIN_EXT_VERSION:0.0.0}
+  owner-contact: ${OWNER_CONTACT:}
+  admin-origin: ${ADMIN_ORIGIN:http://localhost:8765}
+  rate-limit-per-minute: 20
+  session-ttl: 1h
