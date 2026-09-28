@@ -24,7 +24,6 @@ web-ext.config.ts
 *.njsproj
 *.sln
 *.sw?
-src/app/config.ts
 docs
 
 # a.i files
@@ -32,7 +31,10 @@ projeto.md
 .claude
 
 # environment files
-src/app/config.ts
+extension/src/app/config.ts
+.env.local
+.env.*.local
+.env.production
 
 # arquivos sensíveis / locais
 *.har
